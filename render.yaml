@@ -11,7 +11,7 @@ services:
       - key: DATABASE_HOST
         sync: false
       - key: DATABASE_NAME
-        value: healthcare_agent
+        value: postgres
       - key: DATABASE_USER
         sync: false
       - key: LOG_LEVEL
