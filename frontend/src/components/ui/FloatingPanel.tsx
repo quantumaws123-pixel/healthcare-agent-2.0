@@ -4,9 +4,10 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { floatIn } from "@/lib/motion";
 
-export interface FloatingPanelProps extends HTMLMotionProps<"div"> {
+export interface FloatingPanelProps extends Omit<HTMLMotionProps<"div">, "children"> {
   title?: string; description?: string; onClose?: () => void;
   actions?: React.ReactNode; headerClassName?: string; bodyClassName?: string; noPadding?: boolean;
+  children?: React.ReactNode;
 }
 
 export function FloatingPanel({ title, description, onClose, actions, headerClassName, bodyClassName, noPadding, children, className, ...motionProps }: FloatingPanelProps) {
