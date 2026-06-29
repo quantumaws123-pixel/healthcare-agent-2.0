@@ -239,7 +239,7 @@ class ModelRegistry:
                 "Train and register a model first."
             )
 
-        model_path = Path(db_record.model_path)
+        model_path = Path(db_record.model_path.replace('\\', '/'))
         if not model_path.exists():
             raise FileNotFoundError(
                 f"Model artefact not found on disk: '{model_path}'. "
