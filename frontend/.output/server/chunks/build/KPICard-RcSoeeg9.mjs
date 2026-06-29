@@ -1,0 +1,13 @@
+import { jsx, jsxs } from 'react/jsx-runtime';
+import { motion } from 'framer-motion';
+import { Minus, TrendingUp, TrendingDown } from 'lucide-react';
+import { p } from './utils-DSi8ROt9.mjs';
+import { v, H } from './Card-Dhiw95f2.mjs';
+
+function M({ title: x, value: u, unit: s, trend: t, trendLabel: i, icon: n, iconColor: h = "bg-primary-50 dark:bg-primary-900/30", description: l, className: d, loading: y, invertTrend: f = false }) {
+  const o = t != null ? f ? t < 0 : t > 0 : null, c = t === 0, p$1 = c ? Minus : o ? TrendingUp : TrendingDown, N = c ? "text-gray-400" : o ? "text-success-600 dark:text-green-400" : "text-danger-500 dark:text-red-400";
+  return y ? jsx(v, { className: p("animate-pulse", d), children: jsxs("div", { className: "flex items-start justify-between", children: [jsxs("div", { className: "space-y-2", children: [jsx("div", { className: "h-3.5 w-24 rounded-full bg-gray-200 dark:bg-gray-700" }), jsx("div", { className: "h-8 w-32 rounded-xl bg-gray-200 dark:bg-gray-700" }), jsx("div", { className: "h-3 w-20 rounded-full bg-gray-200 dark:bg-gray-700" })] }), jsx("div", { className: "w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700" })] }) }) : jsx(motion.div, { variants: H, children: jsx(v, { className: p("group hover:shadow-float hover:-translate-y-0.5 transition-all duration-200", d), children: jsxs("div", { className: "flex items-start justify-between gap-4", children: [jsxs("div", { className: "min-w-0", children: [jsx("p", { className: "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide truncate", children: x }), jsxs("div", { className: "mt-2 flex items-baseline gap-1", children: [jsx(motion.span, { className: "text-2xl font-bold text-gray-900 dark:text-white tabular-nums", initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }, children: u }), s && jsx("span", { className: "text-sm text-gray-500 dark:text-gray-400 font-medium", children: s })] }), t != null && jsxs("div", { className: p("mt-2 flex items-center gap-1", N), children: [jsx(p$1, { size: 13, strokeWidth: 2.5, "aria-hidden": true }), jsxs("span", { className: "text-xs font-semibold tabular-nums", children: [Math.abs(t).toFixed(1), "%"] }), i && jsx("span", { className: "text-xs text-gray-400 font-normal", children: i })] }), l && jsx("p", { className: "mt-1.5 text-xs text-gray-500", children: l })] }), n && jsx("div", { className: p("flex items-center justify-center w-10 h-10 rounded-xl shrink-0 transition-transform duration-200 group-hover:scale-110", h), children: n })] }) }) });
+}
+
+export { M };
+//# sourceMappingURL=KPICard-RcSoeeg9.mjs.map

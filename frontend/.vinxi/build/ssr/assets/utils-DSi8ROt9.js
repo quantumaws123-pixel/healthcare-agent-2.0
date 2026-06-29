@@ -1,0 +1,1 @@
+import{clsx as e}from"clsx";import{twMerge as i}from"tailwind-merge";function p(...t){return i(e(t))}function s(t){return t.split(" ").slice(0,2).map(r=>r[0]?.toUpperCase()??"").join("")}export{p as c,s as g};

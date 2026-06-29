@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+
+# Node / Frontend
+node_modules/
+dist/
+.svelte-kit/
+.vercel/
+
+# Environment / Credentials
+.env
+.env.local
+.env.*.local
+
+# Large Data Files
+*.csv
+*.xlsx
+!Data_Dictionary_generated_check.xlsx
+
+# Keep models but ignore any temporary files
+# We want to commit the trained models so they deploy to Render directly
+# models/

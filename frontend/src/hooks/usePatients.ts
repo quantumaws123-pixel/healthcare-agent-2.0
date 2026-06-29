@@ -1,0 +1,24 @@
+import { useQuery } from "@tanstack/react-query";
+import { getPatients, getDashboardStats, getPatientSummary, queryKeys, type GetPatientsParams } from "@/lib/api";
+
+export function usePatients(params: GetPatientsParams = {}) {
+  return useQuery({
+    queryKey: queryKeys.patients(params),
+    queryFn: () => getPatients(params),
+  });
+}
+
+export function usePatientSummary(patientId: string) {
+  return useQuery({
+    queryKey: queryKeys.patientSummary(patientId),
+    queryFn: () => getPatientSummary(patientId),
+    enabled: Boolean(patientId),
+  });
+}
+
+export function useDashboardStats() {
+  return useQuery({
+    queryKey: queryKeys.dashboardStats(),
+    queryFn: getDashboardStats,
+  });
+}

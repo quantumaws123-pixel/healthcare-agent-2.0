@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: healthcare-agent-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: DATABASE_HOST
+        sync: false
+      - key: DATABASE_NAME
+        value: healthcare_agent
+      - key: DATABASE_USER
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO

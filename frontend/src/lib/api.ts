@@ -1,0 +1,100 @@
+/**
+ * API client for Healthcare Agent 2.0 backend (FastAPI).
+ * All endpoints map to the REST API defined in requirements.
+ */
+
+import type {
+  PatientSummary,
+  DailyTrend,
+  PredictionResponse,
+  PaginatedResponse,
+  DashboardStats,
+  PatientRecord,
+  ApiError,
+} from "@/types";
+
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+/* ── Base fetch helper ──────────────────────────────────────────────────── */
+
+async function apiFetch<T>(
+  path: string,
+  options?: RequestInit
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    ...options,
+  });
+
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      message = body?.detail ?? body?.message ?? message;
+    } catch {
+      // ignore
+    }
+    const err: ApiError = { status: res.status, message };
+    throw err;
+  }
+
+  return res.json() as Promise<T>;
+}
+
+/* ── Patients ───────────────────────────────────────────────────────────── */
+
+export interface GetPatientsParams {
+  page?: number;
+  page_size?: number;
+  disease_type?: string;
+  risk_level?: string;
+}
+
+export function getPatients(
+  params: GetPatientsParams = {}
+): Promise<PaginatedResponse<PatientSummary>> {
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.page_size) qs.set("page_size", String(params.page_size));
+  if (params.disease_type) qs.set("disease_type", params.disease_type);
+  if (params.risk_level) qs.set("risk_level", params.risk_level);
+
+  return apiFetch<PaginatedResponse<PatientSummary>>(
+    `/patients?${qs.toString()}`
+  );
+}
+
+export function getPatientSummary(patientId: string): Promise<DailyTrend[]> {
+  return apiFetch<DailyTrend[]>(`/patients/${encodeURIComponent(patientId)}/summary`);
+}
+
+/* ── Prediction ─────────────────────────────────────────────────────────── */
+
+export function predict(record: Partial<PatientRecord>): Promise<PredictionResponse> {
+  return apiFetch<PredictionResponse>("/predict", {
+    method: "POST",
+    body: JSON.stringify(record),
+  });
+}
+
+/* ── Dashboard stats ────────────────────────────────────────────────────── */
+
+export function getDashboardStats(): Promise<DashboardStats> {
+  return apiFetch<DashboardStats>("/dashboard/stats");
+}
+
+/* ── Query keys — used by TanStack Query ────────────────────────────────── */
+
+export const queryKeys = {
+  patients: (params?: GetPatientsParams) =>
+    ["patients", params] as const,
+  patientSummary: (id: string) =>
+    ["patient-summary", id] as const,
+  dashboardStats: () =>
+    ["dashboard-stats"] as const,
+  prediction: (recordHash: string) =>
+    ["prediction", recordHash] as const,
+};
