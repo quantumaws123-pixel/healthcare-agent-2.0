@@ -58,7 +58,19 @@ The prototype is fully deployed and live in the cloud:
 
 ---
 
-## 🧪 4. Local Run Commands
+## 🔗 4. API Integration & UI Wiring
+
+We connected the frontend pages to the live backend API by replacing the hardcoded mock arrays with active TanStack Query hooks:
+
+- **Dashboard (`_app.index.tsx`)**: Wired `useDashboardStats` to populate the KPI cards (total patients, high risk count, compliance, and readmission probability), risk distribution progress bars, recovery status breakdown, and compliance progress ring. Wired `usePatients` to fetch the top 5 high-risk patients.
+- **Patients List (`_app.patients.tsx`)**: Wired `usePatients` with stateful parameters (page, disease type, risk level) to support real server-side filtering, sorting, and pagination.
+- **Patient Detail (`_app.patients.$patientId.tsx`)**: Wired `usePatientSummary` to load the 30-day clinical trend data for the specific patient and populate all trend line charts, area charts, and compliance score progress rings.
+- **Models (`_app.models.tsx`)**: Wired `useModelInfo` to fetch the active model's version, algorithm, training dataset size, training date, and evaluation metrics (AUC-ROC, F1, Accuracy) from the backend.
+- **SPA Routing (`vercel.json`)**: Added rewrite rules to handle client-side routing on Vercel, preventing `404 NOT FOUND` errors on page refreshes.
+
+---
+
+## 🧪 5. Local Run Commands
 
 To run the project locally on your machine:
 
