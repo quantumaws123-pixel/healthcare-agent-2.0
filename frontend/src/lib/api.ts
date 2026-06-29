@@ -52,6 +52,7 @@ export interface GetPatientsParams {
   page_size?: number;
   disease_type?: string;
   risk_level?: string;
+  patient_id?: string;
 }
 
 export function getPatients(
@@ -62,6 +63,7 @@ export function getPatients(
   if (params.page_size) qs.set("page_size", String(params.page_size));
   if (params.disease_type) qs.set("disease_type", params.disease_type);
   if (params.risk_level) qs.set("risk_level", params.risk_level);
+  if (params.patient_id) qs.set("patient_id", params.patient_id);
 
   return apiFetch<PaginatedResponse<PatientSummary>>(
     `/patients?${qs.toString()}`

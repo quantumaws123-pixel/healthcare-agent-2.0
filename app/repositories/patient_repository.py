@@ -179,7 +179,8 @@ class PatientRepository:
         page: int = 1,
         page_size: int = 10,
         disease_type: Optional[str] = None,
-        risk_level: Optional[str] = None
+        risk_level: Optional[str] = None,
+        patient_id: Optional[str] = None
     ) -> tuple[list[PatientRecordDB], int]:
         """
         Retrieve paginated list of patient records with optional filtering.
@@ -192,6 +193,7 @@ class PatientRepository:
             page_size: Number of records per page
             disease_type: Optional filter by disease type
             risk_level: Optional filter by risk level
+            patient_id: Optional filter by patient ID (case-insensitive substring)
             
         Returns:
             Tuple of (list of patient records, total count)
@@ -228,6 +230,9 @@ class PatientRepository:
             
             if risk_level:
                 query = query.where(PatientRecordDB.risk_level == risk_level)
+
+            if patient_id:
+                query = query.where(PatientRecordDB.patient_id.ilike(f"%{patient_id}%"))
             
             # Count total records before pagination
             count_query = select(func.count()).select_from(query.subquery())

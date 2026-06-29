@@ -36,12 +36,10 @@ function PatientsPage() {
     page_size: 10,
     disease_type: diseaseFilter === "All" ? undefined : diseaseFilter,
     risk_level: riskFilter === "All" ? undefined : riskFilter,
+    patient_id: search || undefined,
   });
 
-  const patients = patientsData?.data ?? [];
-  const filtered = patients.filter((p) => {
-    return !search || p.Patient_ID.toLowerCase().includes(search.toLowerCase());
-  });
+  const filtered = patientsData?.data ?? [];
 
   const totalPages = patientsData?.total_pages ?? 1;
   const totalCount = patientsData?.total ?? 0;

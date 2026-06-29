@@ -167,8 +167,8 @@ export interface PaginatedResponse<T> {
 
 export interface DashboardStats {
   total_patients: number;
-  risk_distribution: Record<RiskLevel, number>;
-  recovery_distribution: Record<RecoveryStatus, number>;
+  risk_distribution: Record<string, number>;
+  recovery_distribution: Record<string, number>;
   avg_compliance: number;
   avg_readmission_probability: number;
   high_risk_count: number;

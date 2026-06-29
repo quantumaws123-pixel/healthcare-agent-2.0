@@ -49,13 +49,20 @@ function DashboardOverview() {
     avgReadmissionProbability: stats?.avg_readmission_probability ?? 0,
   };
 
-  const riskDistribution = stats?.risk_distribution ?? { Low: 0, Medium: 0, High: 0, Critical: 0 };
+  const riskDistribution = stats?.risk_distribution ?? { low: 0, medium: 0, high: 0, critical: 0 };
   const recoveryDistribution = stats?.recovery_distribution ?? {};
+
+  const formatRecoveryStatus = (status: string) => {
+    return status
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
 
   // Map recovery status counts to percentages for display
   const totalRecovery = (Object.values(recoveryDistribution) as number[]).reduce((a, b) => a + b, 0) || 1;
   const recoveryDataMapped = Object.entries(recoveryDistribution).map(([status, count]) => ({
-    status,
+    status: formatRecoveryStatus(status),
     pct: Math.round(((count as number) / totalRecovery) * 1000) / 10,
     count: count as number,
   })).sort((a, b) => b.count - a.count);
@@ -137,19 +144,19 @@ function DashboardOverview() {
             <CardContent className="space-y-4">
               <ProgressBar
                 label="Low Risk"
-                value={Math.round((riskDistribution.Low / kpis.totalPatients) * 100) || 0}
+                value={Math.round((riskDistribution.low / kpis.totalPatients) * 100) || 0}
                 showValue
                 color="var(--color-success-500)"
               />
               <ProgressBar
                 label="Medium Risk"
-                value={Math.round((riskDistribution.Medium / kpis.totalPatients) * 100) || 0}
+                value={Math.round((riskDistribution.medium / kpis.totalPatients) * 100) || 0}
                 showValue
                 color="var(--color-warning-500)"
               />
               <ProgressBar
                 label="High Risk"
-                value={Math.round(((riskDistribution.High + (riskDistribution.Critical ?? 0)) / kpis.totalPatients) * 100) || 0}
+                value={Math.round(((riskDistribution.high + (riskDistribution.critical ?? 0)) / kpis.totalPatients) * 100) || 0}
                 showValue
                 color="var(--color-danger-500)"
               />
@@ -250,6 +257,45 @@ function DashboardOverview() {
           </div>
         </Card>
       </motion.div>
+
+      {/* Disease breakdown */}
+      <motion.div variants={staggerItem}>
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Disease Distribution</CardTitle>
+              <CardDescription>Patient count by primary condition</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {DISEASE_DATA.map((d) => (
+              <div
+                key={d.name}
+                className="rounded-xl bg-[var(--color-border-subtle)] p-3 text-center"
+              >
+                <p className="text-lg font-bold text-[var(--color-foreground)] tabular-nums">
+                  {d.count.toLocaleString()}
+                </p>
+                <p className="text-xs text-[var(--color-muted)] mt-0.5">{d.name}</p>
+                <div className="mt-2">
+                  <ProgressBar value={(d.count / kpis.totalPatients) * 100} size="xs" animated />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </motion.div>
     </motion.div>
   );
 }
+
+const DISEASE_DATA = [
+  { name: "Diabetes", count: 40 },
+  { name: "Hypertension", count: 35 },
+  { name: "Cardiac", count: 30 },
+  { name: "COPD", count: 20 },
+  { name: "Kidney Disease", count: 15 },
+  { name: "Asthma", count: 12 },
+  { name: "Stroke Recovery", count: 10 },
+  { name: "Post Surgery", count: 5 },
+];

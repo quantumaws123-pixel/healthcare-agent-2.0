@@ -152,6 +152,11 @@ async def list_patients(
         default=None,
         description="Filter results to a specific Risk_Level value (Low, Medium, High, Critical).",
     ),
+    patient_id: Optional[str] = Query(
+        default=None,
+        alias="patient_id",
+        description="Filter results to a specific patient ID (substring).",
+    ),
     db: AsyncSession = Depends(get_db_session),
 ) -> PaginatedResponse:
     """
@@ -171,6 +176,7 @@ async def list_patients(
             page_size=page_size,
             disease_type=disease_type,
             risk_level=risk_level,
+            patient_id=patient_id,
         )
     except Exception as exc:
         logger.error("Error fetching patient list: %s", exc, exc_info=True)
