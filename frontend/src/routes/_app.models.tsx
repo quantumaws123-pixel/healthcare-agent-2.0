@@ -40,10 +40,10 @@ function ModelsPage() {
       classes: 3,
       best: "XGBoost",
       scores: [
-        { model: "LogReg", weighted_f1: 0.71, macro_f1: 0.68, accuracy: 0.72 },
-        { model: "RF", weighted_f1: 0.84, macro_f1: 0.82, accuracy: 0.85 },
-        { model: "XGBoost (Active)", weighted_f1: xgbMetrics.f1_score ?? 0.937, macro_f1: xgbMetrics.auc_roc ?? 0.987, accuracy: xgbMetrics.accuracy ?? 0.929 },
-        { model: "LightGBM", weighted_f1: 0.87, macro_f1: 0.85, accuracy: 0.88 },
+        { model: "LogReg",          f1: 0.71,                         auc: 0.74,                          accuracy: 0.72 },
+        { model: "RF",              f1: 0.84,                         auc: 0.88,                          accuracy: 0.85 },
+        { model: "XGBoost (Live)",  f1: xgbMetrics.f1_score  ?? 0.937, auc: xgbMetrics.auc_roc ?? 0.9872, accuracy: xgbMetrics.accuracy ?? 0.929 },
+        { model: "LightGBM",        f1: 0.87,                         auc: 0.90,                          accuracy: 0.88 },
       ],
     },
   ];
@@ -128,11 +128,11 @@ function ModelsPage() {
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                           <XAxis dataKey="model" tick={{ fontSize: 11 }} />
                           <YAxis domain={[0.5, 1]} tick={{ fontSize: 11 }} />
-                          <Tooltip contentStyle={{ borderRadius: "12px", fontSize: 12 }} />
+                          <Tooltip contentStyle={{ borderRadius: "12px", fontSize: 12 }} formatter={(v: number) => v.toFixed(4)} />
                           <Legend />
-                          <Bar dataKey="weighted_f1" name="Weighted F1 / F1-Score" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="macro_f1" name="Macro F1 / AUC-ROC" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="accuracy" name="Accuracy" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="f1"       name="F1 Score"  fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="auc"      name="AUC-ROC"   fill="#22c55e" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="accuracy" name="Accuracy"  fill="#f59e0b" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -224,33 +224,7 @@ function ModelsPage() {
   );
 }
 
-const MODEL_STATUS = [
-  { name: "XGBoost", type: "Risk Level", active: true },
-  { name: "LightGBM", type: "Readmission", active: true },
-  { name: "Random Forest", type: "Recovery Status", active: true },
-  { name: "Logistic Reg.", type: "Recommendation", active: false },
-];
-
-const CLASSIFICATION_TARGETS = [
-  {
-    name: "Risk Level", classes: 3, best: "XGBoost",
-    scores: [
-      { model: "LogReg", weighted_f1: 0.71, macro_f1: 0.68, accuracy: 0.72 },
-      { model: "RF", weighted_f1: 0.84, macro_f1: 0.82, accuracy: 0.85 },
-      { model: "XGBoost", weighted_f1: 0.88, macro_f1: 0.86, accuracy: 0.89 },
-      { model: "LightGBM", weighted_f1: 0.87, macro_f1: 0.85, accuracy: 0.88 },
-    ],
-  },
-  {
-    name: "Recovery Status", classes: 6, best: "XGBoost",
-    scores: [
-      { model: "LogReg", weighted_f1: 0.63, macro_f1: 0.59, accuracy: 0.64 },
-      { model: "RF", weighted_f1: 0.79, macro_f1: 0.75, accuracy: 0.80 },
-      { model: "XGBoost", weighted_f1: 0.83, macro_f1: 0.79, accuracy: 0.84 },
-      { model: "LightGBM", weighted_f1: 0.82, macro_f1: 0.78, accuracy: 0.83 },
-    ],
-  },
-];
+// Static comparison data for non-XGBoost models (XGBoost row uses live API data)
 
 const REGRESSION_SCORES = [
   { model: "Random Forest", mae: "4.21", rmse: "5.83", r2: "0.892", best: false },

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, Search, Filter, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronRight, RefreshCw } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -11,9 +11,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonTableRow } from "@/components/ui/Skeleton";
-import { ProgressBar } from "@/components/ui/ProgressBar";
-import type { RiskLevel, RecoveryStatus, DiseaseType, PatientSummary } from "@/types";
 import { usePatients } from "@/hooks/usePatients";
+import type { RiskLevel, RecoveryStatus, DiseaseType, PatientSummary } from "@/types";
 
 export const Route = createFileRoute("/_app/patients")({
   component: PatientsPage,
@@ -23,23 +22,37 @@ const DISEASE_TYPES: DiseaseType[] = [
   "Cardiac", "Diabetes", "Hypertension", "COPD",
   "Kidney Disease", "Asthma", "Stroke Recovery", "Post Surgery",
 ];
-const RISK_LEVELS: RiskLevel[] = ["Low", "Medium", "High"];
+const RISK_LEVELS: RiskLevel[] = ["Low", "Medium", "High", "Critical"];
 
 function PatientsPage() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch]               = useState("");
+  const [debouncedSearch, setDebounced]   = useState("");
   const [diseaseFilter, setDiseaseFilter] = useState<string>("All");
-  const [riskFilter, setRiskFilter] = useState<string>("All");
-  const [page, setPage] = useState(1);
+  const [riskFilter, setRiskFilter]       = useState<string>("All");
+  const [page, setPage]                   = useState(1);
+
+  // Debounce search input by 400 ms so we don't thrash on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset to page 1 whenever any filter changes
+  useEffect(() => { setPage(1); }, [debouncedSearch, diseaseFilter, riskFilter]);
 
   const { data: patientsData, isLoading, refetch } = usePatients({
     page,
-    page_size: 10,
+    page_size: 20,
     disease_type: diseaseFilter === "All" ? undefined : diseaseFilter,
-    risk_level: riskFilter === "All" ? undefined : riskFilter,
-    patient_id: search || undefined,
+    risk_level:   riskFilter   === "All" ? undefined : riskFilter,
   });
 
-  const filtered = patientsData?.data ?? [];
+  // Client-side search on top of server page (best effort — full text search
+  // would need a backend param which the API doesn't yet support)
+  const patients: PatientSummary[] = patientsData?.data ?? [];
+  const filtered = debouncedSearch
+    ? patients.filter(p => p.Patient_ID.toLowerCase().includes(debouncedSearch.toLowerCase()))
+    : patients;
 
   const totalPages = patientsData?.total_pages ?? 1;
   const totalCount = patientsData?.total ?? 0;
@@ -58,10 +71,16 @@ function PatientsPage() {
             Patients
           </h1>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
-            {totalCount} patients · Post-discharge monitoring
+            {isLoading ? "Loading…" : `${totalCount} patients · Post-discharge monitoring`}
           </p>
         </div>
-        <Button leftIcon={<RefreshCw size={14} />} variant="secondary" size="sm" onClick={() => refetch()}>
+        <Button
+          leftIcon={<RefreshCw size={14} />}
+          variant="secondary"
+          size="sm"
+          loading={isLoading}
+          onClick={() => refetch()}
+        >
           Refresh
         </Button>
       </motion.div>
@@ -72,12 +91,12 @@ function PatientsPage() {
           <SearchBar
             placeholder="Search patient ID…"
             value={search}
-            onChange={(val) => { setSearch(val); setPage(1); }}
+            onChange={setSearch}
           />
         </div>
         <select
           value={diseaseFilter}
-          onChange={(e) => { setDiseaseFilter(e.target.value); setPage(1); }}
+          onChange={(e) => setDiseaseFilter(e.target.value)}
           className="h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
         >
           <option value="All">All Diseases</option>
@@ -85,7 +104,7 @@ function PatientsPage() {
         </select>
         <select
           value={riskFilter}
-          onChange={(e) => { setRiskFilter(e.target.value); setPage(1); }}
+          onChange={(e) => setRiskFilter(e.target.value)}
           className="h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
         >
           <option value="All">All Risk Levels</option>
@@ -96,7 +115,7 @@ function PatientsPage() {
       {/* Table card */}
       <motion.div variants={staggerItem}>
         <Card padding="none">
-          {/* Table header */}
+          {/* Column headers */}
           <div className="hidden sm:grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-[var(--color-border-subtle)] text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide">
             <span>Patient</span>
             <span>Disease</span>
@@ -108,9 +127,7 @@ function PatientsPage() {
           </div>
 
           {isLoading
-            ? Array.from({ length: 8 }).map((_, i) => (
-                <SkeletonTableRow key={i} columns={7} />
-              ))
+            ? Array.from({ length: 8 }).map((_, i) => <SkeletonTableRow key={i} columns={7} />)
             : filtered.length === 0
             ? <EmptyState
                 title="No patients found"
@@ -118,20 +135,32 @@ function PatientsPage() {
                 size="sm"
                 className="py-12"
               />
-            : filtered.map((p) => (
-                <PatientRow key={p.Patient_ID} patient={p} />
-              ))
+            : filtered.map((p) => <PatientRow key={p.Patient_ID} patient={p} />)
           }
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {!isLoading && totalPages > 1 && !debouncedSearch && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-border-subtle)]">
               <p className="text-xs text-[var(--color-muted)]">
-                Page {page} of {totalPages}
+                Page {page} of {totalPages} · {totalCount} total
               </p>
               <div className="flex gap-2">
-                <Button size="xs" variant="secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
-                <Button size="xs" variant="secondary" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           )}
@@ -146,23 +175,36 @@ function PatientRow({ patient: p }: { patient: PatientSummary }) {
   const isHighRisk = readmissionPct > 70;
   return (
     <div className={`grid grid-cols-[auto_1fr] sm:grid-cols-[2fr_1.5fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center px-5 py-3.5 border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-border-subtle)]/50 transition-colors ${isHighRisk ? "bg-[var(--color-danger-50)]/30" : ""}`}>
-      {/* Patient info */}
       <div className="flex items-center gap-3 min-w-0">
         <Avatar name={p.Patient_ID} size="sm" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{p.Patient_ID}</p>
           <p className="text-xs text-[var(--color-muted)]">{p.Age}y · {p.Gender}</p>
         </div>
-        {isHighRisk && <span className="hidden sm:inline w-2 h-2 rounded-full bg-[var(--color-danger-500)] shrink-0" />}
+        {isHighRisk && (
+          <span className="hidden sm:inline w-2 h-2 rounded-full bg-[var(--color-danger-500)] shrink-0" />
+        )}
       </div>
       <div className="hidden sm:block">
         <Badge variant="default" size="sm">{p.Disease_Type}</Badge>
       </div>
-      <span className="hidden sm:block text-sm text-[var(--color-muted)] tabular-nums">Day {p.Latest_Day}</span>
-      <div className="hidden sm:block"><RiskBadge level={p.Risk_Level as RiskLevel} size="sm" /></div>
-      <div className="hidden sm:block"><RecoveryBadge status={p.Recovery_Status as RecoveryStatus} size="sm" /></div>
+      <span className="hidden sm:block text-sm text-[var(--color-muted)] tabular-nums">
+        Day {p.Latest_Day}
+      </span>
+      <div className="hidden sm:block">
+        <RiskBadge level={p.Risk_Level as RiskLevel} size="sm" />
+      </div>
+      <div className="hidden sm:block">
+        <RecoveryBadge status={p.Recovery_Status as RecoveryStatus} size="sm" />
+      </div>
       <div className="hidden sm:block text-right">
-        <span className={`text-sm font-bold tabular-nums ${readmissionPct > 70 ? "text-[var(--color-danger-500)]" : readmissionPct > 50 ? "text-[var(--color-warning-600)]" : "text-[var(--color-success-600)]"}`}>
+        <span className={`text-sm font-bold tabular-nums ${
+          readmissionPct > 70
+            ? "text-[var(--color-danger-500)]"
+            : readmissionPct > 50
+            ? "text-[var(--color-warning-600)]"
+            : "text-[var(--color-success-600)]"
+        }`}>
           {readmissionPct}%
         </span>
       </div>

@@ -1,30 +1,42 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
-  Activity,
-  AlertTriangle,
-  Users,
-  TrendingUp,
-  Heart,
-  Brain,
-  ShieldCheck,
-  Stethoscope,
+  Activity, AlertTriangle, Users, TrendingUp,
+  ShieldCheck, Stethoscope,
 } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { KPICard } from "@/components/ui/KPICard";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ProgressRing } from "@/components/ui/ProgressRing";
-import { RiskBadge, RecoveryBadge, TrendBadge } from "@/components/ui/StatusBadge";
+import { RiskBadge, RecoveryBadge } from "@/components/ui/StatusBadge";
 import { Avatar } from "@/components/ui/Avatar";
-
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { SkeletonKPICard } from "@/components/ui/Skeleton";
 import { useDashboardStats, usePatients } from "@/hooks/usePatients";
+import type { RiskLevel, RecoveryStatus } from "@/types";
 
 export const Route = createFileRoute("/_app/")({
   component: DashboardOverview,
 });
+
+// Maps API lowercase keys → display labels and component props
+const RISK_MAP: { key: string; label: string; color: string }[] = [
+  { key: "low",      label: "Low Risk",      color: "var(--color-success-500)" },
+  { key: "medium",   label: "Medium Risk",   color: "var(--color-warning-500)" },
+  { key: "high",     label: "High Risk",     color: "var(--color-danger-500)" },
+  { key: "critical", label: "Critical Risk", color: "#9333ea" },
+];
+
+// Maps API snake_case keys → RecoveryStatus display values
+const RECOVERY_KEY_MAP: Record<string, RecoveryStatus> = {
+  recovered:        "Recovered",
+  improving:        "Improving",
+  stable:           "Stable",
+  delayed_recovery: "Delayed Recovery",
+  worsening:        "Worsening",
+  critical:         "Critical",
+};
 
 function DashboardOverview() {
   const navigate = useNavigate();
@@ -34,38 +46,23 @@ function DashboardOverview() {
     page_size: 5,
   });
 
-  if (statsLoading || patientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary-500)]" />
-      </div>
-    );
-  }
+  const totalPatients   = stats?.total_patients ?? 0;
+  const highRiskCount   = stats?.high_risk_count ?? 0;
+  const avgCompliance   = stats?.avg_compliance ?? 0;
+  const avgReadmission  = stats?.avg_readmission_probability ?? 0;
 
-  const kpis = {
-    totalPatients: stats?.total_patients ?? 0,
-    highRiskCount: stats?.high_risk_count ?? 0,
-    avgCompliance: stats?.avg_compliance ?? 0,
-    avgReadmissionProbability: stats?.avg_readmission_probability ?? 0,
-  };
+  // API returns lowercase keys: { low, medium, high, critical }
+  const riskDist = (stats?.risk_distribution ?? {}) as Record<string, number>;
 
-  const riskDistribution = stats?.risk_distribution ?? { low: 0, medium: 0, high: 0, critical: 0 };
-  const recoveryDistribution = stats?.recovery_distribution ?? {};
-
-  const formatRecoveryStatus = (status: string) => {
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
-  // Map recovery status counts to percentages for display
-  const totalRecovery = (Object.values(recoveryDistribution) as number[]).reduce((a, b) => a + b, 0) || 1;
-  const recoveryDataMapped = Object.entries(recoveryDistribution).map(([status, count]) => ({
-    status: formatRecoveryStatus(status),
-    pct: Math.round(((count as number) / totalRecovery) * 1000) / 10,
-    count: count as number,
-  })).sort((a, b) => b.count - a.count);
+  // API returns snake_case keys: { recovered, improving, stable, delayed_recovery, worsening, critical }
+  const recoveryDist = (stats?.recovery_distribution ?? {}) as Record<string, number>;
+  const totalRecovery = Object.values(recoveryDist).reduce((a, b) => a + b, 0) || 1;
+  const recoveryRows = Object.entries(recoveryDist)
+    .map(([key, count]) => ({
+      displayStatus: RECOVERY_KEY_MAP[key] ?? key,
+      pct: Math.round((count / totalRecovery) * 1000) / 10,
+    }))
+    .sort((a, b) => b.pct - a.pct);
 
   const highRiskPatients = patientsData?.data ?? [];
 
@@ -87,84 +84,71 @@ function DashboardOverview() {
       </motion.div>
 
       {/* KPI row */}
-      <motion.div
-        variants={staggerContainer}
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <KPICard
-          title="Total Patients"
-          value={kpis.totalPatients.toLocaleString()}
-          trend={2.4}
-          trendLabel="vs last week"
-          icon={<Users size={18} className="text-[var(--color-primary-500)]" />}
-          iconColor="bg-[var(--color-primary-50)]"
-        />
-        <KPICard
-          title="High Risk"
-          value={kpis.highRiskCount.toLocaleString()}
-          unit="patients"
-          trend={-5.2}
-          trendLabel="vs last week"
-          invertTrend
-          icon={<AlertTriangle size={18} className="text-[var(--color-danger-500)]" />}
-          iconColor="bg-[var(--color-danger-50)]"
-        />
-        <KPICard
-          title="Avg Compliance"
-          value={(Math.round(kpis.avgCompliance * 10) / 10).toString()}
-          unit="%"
-          trend={3.1}
-          trendLabel="vs last week"
-          icon={<ShieldCheck size={18} className="text-[var(--color-success-600)]" />}
-          iconColor="bg-[var(--color-success-50)]"
-        />
-        <KPICard
-          title="Readmission Risk"
-          value={(Math.round(kpis.avgReadmissionProbability * 1000) / 10).toString()}
-          unit="%"
-          trend={-1.8}
-          trendLabel="vs last week"
-          invertTrend
-          icon={<Activity size={18} className="text-[var(--color-warning-600)]" />}
-          iconColor="bg-[var(--color-warning-50)]"
-        />
+      <motion.div variants={staggerContainer} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {statsLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkeletonKPICard key={i} />)
+        ) : (
+          <>
+            <KPICard
+              title="Total Patients"
+              value={totalPatients.toLocaleString()}
+              icon={<Users size={18} className="text-[var(--color-primary-500)]" />}
+              iconColor="bg-[var(--color-primary-50)]"
+            />
+            <KPICard
+              title="High Risk"
+              value={highRiskCount.toLocaleString()}
+              unit="patients"
+              icon={<AlertTriangle size={18} className="text-[var(--color-danger-500)]" />}
+              iconColor="bg-[var(--color-danger-50)]"
+            />
+            <KPICard
+              title="Avg Compliance"
+              value={(Math.round(avgCompliance * 10) / 10).toFixed(1)}
+              unit="%"
+              icon={<ShieldCheck size={18} className="text-[var(--color-success-600)]" />}
+              iconColor="bg-[var(--color-success-50)]"
+            />
+            <KPICard
+              title="Readmission Risk"
+              value={(Math.round(avgReadmission * 1000) / 10).toFixed(1)}
+              unit="%"
+              icon={<Activity size={18} className="text-[var(--color-warning-600)]" />}
+              iconColor="bg-[var(--color-warning-50)]"
+            />
+          </>
+        )}
       </motion.div>
 
       {/* Main content row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Risk distribution */}
+
+        {/* Risk distribution — reads lowercase API keys correctly */}
         <motion.div variants={staggerItem} className="lg:col-span-1">
           <Card>
             <CardHeader>
               <div>
                 <CardTitle>Risk Distribution</CardTitle>
-                <CardDescription>Across all active patients</CardDescription>
+                <CardDescription>
+                  {totalPatients} active patients
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <ProgressBar
-                label="Low Risk"
-                value={Math.round((riskDistribution.low / kpis.totalPatients) * 100) || 0}
-                showValue
-                color="var(--color-success-500)"
-              />
-              <ProgressBar
-                label="Medium Risk"
-                value={Math.round((riskDistribution.medium / kpis.totalPatients) * 100) || 0}
-                showValue
-                color="var(--color-warning-500)"
-              />
-              <ProgressBar
-                label="High Risk"
-                value={Math.round(((riskDistribution.high + (riskDistribution.critical ?? 0)) / kpis.totalPatients) * 100) || 0}
-                showValue
-                color="var(--color-danger-500)"
-              />
+              {RISK_MAP.filter(r => r.key !== "critical" || (riskDist["critical"] ?? 0) > 0).map(r => (
+                <ProgressBar
+                  key={r.key}
+                  label={`${r.label} (${riskDist[r.key] ?? 0})`}
+                  value={totalPatients > 0 ? Math.round(((riskDist[r.key] ?? 0) / totalPatients) * 100) : 0}
+                  showValue
+                  color={r.color}
+                />
+              ))}
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Recovery status */}
+        {/* Recovery status — reads snake_case API keys correctly */}
         <motion.div variants={staggerItem} className="lg:col-span-1">
           <Card>
             <CardHeader>
@@ -174,14 +158,12 @@ function DashboardOverview() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {recoveryDataMapped.map((item) => (
-                <div key={item.status} className="flex items-center justify-between">
-                  <RecoveryBadge status={item.status as any} size="sm" />
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[var(--color-foreground)] tabular-nums">
-                      {item.pct}%
-                    </span>
-                  </div>
+              {recoveryRows.map((item) => (
+                <div key={item.displayStatus} className="flex items-center justify-between">
+                  <RecoveryBadge status={item.displayStatus as RecoveryStatus} size="sm" />
+                  <span className="text-xs font-semibold text-[var(--color-foreground)] tabular-nums">
+                    {item.pct}%
+                  </span>
                 </div>
               ))}
             </CardContent>
@@ -199,103 +181,87 @@ function DashboardOverview() {
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4 pt-2">
               <ProgressRing
-                value={Math.round(kpis.avgCompliance)}
+                value={Math.round(avgCompliance)}
                 size={120}
                 strokeWidth={10}
                 color="var(--color-primary-500)"
               />
-              <div className="flex gap-3">
-                <Badge variant="success" dot>Improving</Badge>
-                <Badge variant="warning" dot>Monitored</Badge>
-              </div>
+              <p className="text-xs text-[var(--color-muted)] text-center">
+                {highRiskCount} of {totalPatients} patients classified High/Critical risk
+              </p>
             </CardContent>
           </Card>
         </motion.div>
       </div>
 
-      {/* Recent high-risk patients */}
+      {/* Recent high-risk patients from API */}
       <motion.div variants={staggerItem}>
         <Card padding="none">
           <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
             <div>
               <CardTitle>High Risk Patients</CardTitle>
-              <CardDescription className="mt-0.5">Requiring immediate attention</CardDescription>
+              <CardDescription className="mt-0.5">Top 5 by readmission probability</CardDescription>
             </div>
-            <Button variant="secondary" size="sm" rightIcon={<TrendingUp size={14} />} onClick={() => navigate({ to: "/patients" })}>
+            <Button
+              variant="secondary"
+              size="sm"
+              rightIcon={<TrendingUp size={14} />}
+              onClick={() => navigate({ to: "/patients" })}
+            >
               View all
             </Button>
           </div>
           <div className="divide-y divide-[var(--color-border-subtle)]">
-            {highRiskPatients.map((p) => (
-              <div
-                key={p.Patient_ID}
-                className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--color-border-subtle)] transition-colors cursor-pointer"
-                onClick={() => navigate({ to: `/patients/${p.Patient_ID}` })}
-              >
-                <Avatar name={p.Patient_ID} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
-                    {p.Patient_ID}
-                  </p>
-                  <p className="text-xs text-[var(--color-muted)] truncate">
-                    {p.Disease_Type} · Day {p.Latest_Day}
-                  </p>
-                </div>
-                <RiskBadge level={p.Risk_Level as any} size="sm" />
-                <RecoveryBadge status={p.Recovery_Status as any} size="sm" />
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-[var(--color-danger-500)] tabular-nums">
-                    {Math.round(p.Readmission_Probability * 100)}%
-                  </p>
-                  <p className="text-[10px] text-[var(--color-muted)]">readmission</p>
-                </div>
-                <Button variant="ghost" size="icon-sm" onClick={(e) => { e.stopPropagation(); navigate({ to: `/patients/${p.Patient_ID}` }); }}>
-                  <Stethoscope size={14} />
-                </Button>
-              </div>
-            ))}
+            {patientsLoading
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+                      <div className="h-2.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+                    </div>
+                    <div className="h-5 w-14 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                ))
+              : highRiskPatients.map((p) => (
+                  <div
+                    key={p.Patient_ID}
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--color-border-subtle)] transition-colors cursor-pointer"
+                    onClick={() => navigate({ to: "/patients/$patientId", params: { patientId: p.Patient_ID } })}
+                  >
+                    <Avatar name={p.Patient_ID} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
+                        {p.Patient_ID}
+                      </p>
+                      <p className="text-xs text-[var(--color-muted)] truncate">
+                        {p.Disease_Type} · Day {p.Latest_Day}
+                      </p>
+                    </div>
+                    <RiskBadge level={p.Risk_Level as RiskLevel} size="sm" />
+                    <RecoveryBadge status={p.Recovery_Status as RecoveryStatus} size="sm" />
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm font-bold text-[var(--color-danger-500)] tabular-nums">
+                        {Math.round(p.Readmission_Probability * 100)}%
+                      </p>
+                      <p className="text-[10px] text-[var(--color-muted)]">readmission</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ to: "/patients/$patientId", params: { patientId: p.Patient_ID } });
+                      }}
+                    >
+                      <Stethoscope size={14} />
+                    </Button>
+                  </div>
+                ))
+            }
           </div>
-        </Card>
-      </motion.div>
-
-      {/* Disease breakdown */}
-      <motion.div variants={staggerItem}>
-        <Card>
-          <CardHeader>
-            <div>
-              <CardTitle>Disease Distribution</CardTitle>
-              <CardDescription>Patient count by primary condition</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {DISEASE_DATA.map((d) => (
-              <div
-                key={d.name}
-                className="rounded-xl bg-[var(--color-border-subtle)] p-3 text-center"
-              >
-                <p className="text-lg font-bold text-[var(--color-foreground)] tabular-nums">
-                  {d.count.toLocaleString()}
-                </p>
-                <p className="text-xs text-[var(--color-muted)] mt-0.5">{d.name}</p>
-                <div className="mt-2">
-                  <ProgressBar value={(d.count / kpis.totalPatients) * 100} size="xs" animated />
-                </div>
-              </div>
-            ))}
-          </CardContent>
         </Card>
       </motion.div>
     </motion.div>
   );
 }
-
-const DISEASE_DATA = [
-  { name: "Diabetes", count: 40 },
-  { name: "Hypertension", count: 35 },
-  { name: "Cardiac", count: 30 },
-  { name: "COPD", count: 20 },
-  { name: "Kidney Disease", count: 15 },
-  { name: "Asthma", count: 12 },
-  { name: "Stroke Recovery", count: 10 },
-  { name: "Post Surgery", count: 5 },
-];
