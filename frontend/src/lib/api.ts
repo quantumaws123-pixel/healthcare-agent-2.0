@@ -11,6 +11,7 @@ import type {
   DashboardStats,
   PatientRecord,
   ApiError,
+  PatientSummaryResponse,
 } from "@/types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -67,8 +68,8 @@ export function getPatients(
   );
 }
 
-export function getPatientSummary(patientId: string): Promise<DailyTrend[]> {
-  return apiFetch<DailyTrend[]>(`/patients/${encodeURIComponent(patientId)}/summary`);
+export function getPatientSummary(patientId: string): Promise<PatientSummaryResponse> {
+  return apiFetch<PatientSummaryResponse>(`/patients/${encodeURIComponent(patientId)}/summary`);
 }
 
 /* ── Prediction ─────────────────────────────────────────────────────────── */
@@ -86,6 +87,26 @@ export function getDashboardStats(): Promise<DashboardStats> {
   return apiFetch<DashboardStats>("/dashboard/stats");
 }
 
+/* ── Model Info ─────────────────────────────────────────────────────────── */
+
+export interface ModelInfo {
+  model_version: string;
+  model_type: string;
+  training_date: string;
+  dataset_size: number;
+  evaluation_metrics: {
+    accuracy: number | null;
+    precision: number | null;
+    recall: number | null;
+    f1_score: number | null;
+    auc_roc: number | null;
+  };
+}
+
+export function getModelInfo(): Promise<ModelInfo> {
+  return apiFetch<ModelInfo>("/model/info");
+}
+
 /* ── Query keys — used by TanStack Query ────────────────────────────────── */
 
 export const queryKeys = {
@@ -97,4 +118,6 @@ export const queryKeys = {
     ["dashboard-stats"] as const,
   prediction: (recordHash: string) =>
     ["prediction", recordHash] as const,
+  modelInfo: () =>
+    ["model-info"] as const,
 };

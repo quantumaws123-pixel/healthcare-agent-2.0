@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPatients, getDashboardStats, getPatientSummary, queryKeys, type GetPatientsParams } from "@/lib/api";
+import { getPatients, getDashboardStats, getPatientSummary, getModelInfo, queryKeys, type GetPatientsParams } from "@/lib/api";
 
 export function usePatients(params: GetPatientsParams = {}) {
   return useQuery({
@@ -20,5 +20,12 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: queryKeys.dashboardStats(),
     queryFn: getDashboardStats,
+  });
+}
+
+export function useModelInfo() {
+  return useQuery({
+    queryKey: queryKeys.modelInfo(),
+    queryFn: getModelInfo,
   });
 }

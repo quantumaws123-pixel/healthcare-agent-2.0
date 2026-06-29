@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonTableRow } from "@/components/ui/Skeleton";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import type { RiskLevel, RecoveryStatus, DiseaseType } from "@/types";
+import type { RiskLevel, RecoveryStatus, DiseaseType, PatientSummary } from "@/types";
+import { usePatients } from "@/hooks/usePatients";
 
 export const Route = createFileRoute("/_app/patients")({
   component: PatientsPage,
@@ -29,15 +30,21 @@ function PatientsPage() {
   const [diseaseFilter, setDiseaseFilter] = useState<string>("All");
   const [riskFilter, setRiskFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
-  const isLoading = false;
 
-  const filtered = MOCK_PATIENTS.filter((p) => {
-    const matchSearch =
-      !search || p.id.toLowerCase().includes(search.toLowerCase());
-    const matchDisease = diseaseFilter === "All" || p.disease === diseaseFilter;
-    const matchRisk = riskFilter === "All" || p.risk === riskFilter;
-    return matchSearch && matchDisease && matchRisk;
+  const { data: patientsData, isLoading, refetch } = usePatients({
+    page,
+    page_size: 10,
+    disease_type: diseaseFilter === "All" ? undefined : diseaseFilter,
+    risk_level: riskFilter === "All" ? undefined : riskFilter,
   });
+
+  const patients = patientsData?.data ?? [];
+  const filtered = patients.filter((p) => {
+    return !search || p.Patient_ID.toLowerCase().includes(search.toLowerCase());
+  });
+
+  const totalPages = patientsData?.total_pages ?? 1;
+  const totalCount = patientsData?.total ?? 0;
 
   return (
     <motion.div
@@ -53,10 +60,10 @@ function PatientsPage() {
             Patients
           </h1>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
-            {filtered.length} patients · Post-discharge monitoring
+            {totalCount} patients · Post-discharge monitoring
           </p>
         </div>
-        <Button leftIcon={<RefreshCw size={14} />} variant="secondary" size="sm">
+        <Button leftIcon={<RefreshCw size={14} />} variant="secondary" size="sm" onClick={() => refetch()}>
           Refresh
         </Button>
       </motion.div>
@@ -67,12 +74,12 @@ function PatientsPage() {
           <SearchBar
             placeholder="Search patient ID…"
             value={search}
-            onChange={setSearch}
+            onChange={(val) => { setSearch(val); setPage(1); }}
           />
         </div>
         <select
           value={diseaseFilter}
-          onChange={(e) => setDiseaseFilter(e.target.value)}
+          onChange={(e) => { setDiseaseFilter(e.target.value); setPage(1); }}
           className="h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
         >
           <option value="All">All Diseases</option>
@@ -80,7 +87,7 @@ function PatientsPage() {
         </select>
         <select
           value={riskFilter}
-          onChange={(e) => setRiskFilter(e.target.value)}
+          onChange={(e) => { setRiskFilter(e.target.value); setPage(1); }}
           className="h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
         >
           <option value="All">All Risk Levels</option>
@@ -113,20 +120,20 @@ function PatientsPage() {
                 size="sm"
                 className="py-12"
               />
-            : filtered.slice((page - 1) * 20, page * 20).map((p) => (
-                <PatientRow key={p.id} patient={p} />
+            : filtered.map((p) => (
+                <PatientRow key={p.Patient_ID} patient={p} />
               ))
           }
 
           {/* Pagination */}
-          {filtered.length > 20 && (
+          {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-border-subtle)]">
               <p className="text-xs text-[var(--color-muted)]">
-                Page {page} of {Math.ceil(filtered.length / 20)}
+                Page {page} of {totalPages}
               </p>
               <div className="flex gap-2">
                 <Button size="xs" variant="secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
-                <Button size="xs" variant="secondary" disabled={page >= Math.ceil(filtered.length / 20)} onClick={() => setPage(p => p + 1)}>Next</Button>
+                <Button size="xs" variant="secondary" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
               </div>
             </div>
           )}
@@ -136,31 +143,32 @@ function PatientsPage() {
   );
 }
 
-function PatientRow({ patient: p }: { patient: typeof MOCK_PATIENTS[0] }) {
-  const isHighRisk = p.readmission > 70;
+function PatientRow({ patient: p }: { patient: PatientSummary }) {
+  const readmissionPct = Math.round(p.Readmission_Probability * 100);
+  const isHighRisk = readmissionPct > 70;
   return (
     <div className={`grid grid-cols-[auto_1fr] sm:grid-cols-[2fr_1.5fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center px-5 py-3.5 border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-border-subtle)]/50 transition-colors ${isHighRisk ? "bg-[var(--color-danger-50)]/30" : ""}`}>
       {/* Patient info */}
       <div className="flex items-center gap-3 min-w-0">
-        <Avatar name={p.id} size="sm" />
+        <Avatar name={p.Patient_ID} size="sm" />
         <div className="min-w-0">
-          <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{p.id}</p>
-          <p className="text-xs text-[var(--color-muted)]">{p.age}y · {p.gender}</p>
+          <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{p.Patient_ID}</p>
+          <p className="text-xs text-[var(--color-muted)]">{p.Age}y · {p.Gender}</p>
         </div>
         {isHighRisk && <span className="hidden sm:inline w-2 h-2 rounded-full bg-[var(--color-danger-500)] shrink-0" />}
       </div>
       <div className="hidden sm:block">
-        <Badge variant="default" size="sm">{p.disease}</Badge>
+        <Badge variant="default" size="sm">{p.Disease_Type}</Badge>
       </div>
-      <span className="hidden sm:block text-sm text-[var(--color-muted)] tabular-nums">Day {p.day}</span>
-      <div className="hidden sm:block"><RiskBadge level={p.risk as RiskLevel} size="sm" /></div>
-      <div className="hidden sm:block"><RecoveryBadge status={p.recovery as RecoveryStatus} size="sm" /></div>
+      <span className="hidden sm:block text-sm text-[var(--color-muted)] tabular-nums">Day {p.Latest_Day}</span>
+      <div className="hidden sm:block"><RiskBadge level={p.Risk_Level as RiskLevel} size="sm" /></div>
+      <div className="hidden sm:block"><RecoveryBadge status={p.Recovery_Status as RecoveryStatus} size="sm" /></div>
       <div className="hidden sm:block text-right">
-        <span className={`text-sm font-bold tabular-nums ${p.readmission > 70 ? "text-[var(--color-danger-500)]" : p.readmission > 50 ? "text-[var(--color-warning-600)]" : "text-[var(--color-success-600)]"}`}>
-          {p.readmission}%
+        <span className={`text-sm font-bold tabular-nums ${readmissionPct > 70 ? "text-[var(--color-danger-500)]" : readmissionPct > 50 ? "text-[var(--color-warning-600)]" : "text-[var(--color-success-600)]"}`}>
+          {readmissionPct}%
         </span>
       </div>
-      <Link to="/patients/$patientId" params={{ patientId: p.id }}>
+      <Link to="/patients/$patientId" params={{ patientId: p.Patient_ID }}>
         <Button variant="ghost" size="icon-sm" aria-label="View patient">
           <ChevronRight size={14} />
         </Button>
@@ -168,19 +176,3 @@ function PatientRow({ patient: p }: { patient: typeof MOCK_PATIENTS[0] }) {
     </div>
   );
 }
-
-/* ── Mock data ─────────────────────────────────────────────────────────── */
-const MOCK_PATIENTS = [
-  { id: "HDT-AHD-2026-501118", age: 53, gender: "Male", disease: "Asthma", day: 30, risk: "High", recovery: "Delayed Recovery", readmission: 44.3, compliance: 64.5 },
-  { id: "HDT-LCC-2026-450186", age: 60, gender: "Male", disease: "Cardiac", day: 30, risk: "Medium", recovery: "Worsening", readmission: 59.7, compliance: 39.0 },
-  { id: "HDT-KMC-2026-356698", age: 87, gender: "Male", disease: "Kidney Disease", day: 14, risk: "High", recovery: "Delayed Recovery", readmission: 68.7, compliance: 82.5 },
-  { id: "HDT-SGH-2026-749915", age: 42, gender: "Female", disease: "Diabetes", day: 22, risk: "High", recovery: "Critical", readmission: 71.2, compliance: 55.3 },
-  { id: "HDT-NHP-2026-782008", age: 65, gender: "Male", disease: "COPD", day: 18, risk: "Medium", recovery: "Stable", readmission: 48.6, compliance: 73.1 },
-  { id: "HDT-MCH-2026-839682", age: 55, gender: "Female", disease: "Hypertension", day: 25, risk: "Low", recovery: "Improving", readmission: 22.4, compliance: 88.2 },
-  { id: "HDT-SGH-2026-996501", age: 71, gender: "Male", disease: "Stroke Recovery", day: 30, risk: "High", recovery: "Worsening", readmission: 78.5, compliance: 41.7 },
-  { id: "HDT-AHD-2026-404857", age: 49, gender: "Female", disease: "Post Surgery", day: 12, risk: "Medium", recovery: "Improving", readmission: 35.1, compliance: 79.6 },
-  { id: "HDT-KMC-2026-853458", age: 33, gender: "Male", disease: "Asthma", day: 8, risk: "Low", recovery: "Recovered", readmission: 12.3, compliance: 94.1 },
-  { id: "HDT-NHP-2026-693424", age: 78, gender: "Female", disease: "Cardiac", day: 28, risk: "High", recovery: "Critical", readmission: 82.9, compliance: 38.4 },
-  { id: "HDT-LCC-2026-724412", age: 61, gender: "Male", disease: "Diabetes", day: 15, risk: "Medium", recovery: "Delayed Recovery", readmission: 51.7, compliance: 66.8 },
-  { id: "HDT-SGH-2026-632802", age: 44, gender: "Female", disease: "Kidney Disease", day: 20, risk: "Medium", recovery: "Stable", readmission: 43.2, compliance: 71.5 },
-];

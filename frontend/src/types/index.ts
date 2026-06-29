@@ -127,6 +127,15 @@ export interface DailyTrend {
   ideal_health_score: number;
 }
 
+export interface PatientSummaryResponse {
+  patient_id: string;
+  patient_name: string | null;
+  disease_type: DiseaseType;
+  current_risk_level: RiskLevel;
+  current_recovery_status: RecoveryStatus;
+  daily_trends: DailyTrend[];
+}
+
 /* ── Prediction response from API ─────────────────────────────────────── */
 
 export interface PredictionResponse {
