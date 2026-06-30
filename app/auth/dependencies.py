@@ -33,12 +33,26 @@ async def get_current_user(
 
 
 def require_role(*roles: UserRole):
-    """Dependency factory — checks that the current user has one of the given roles."""
+    """Dependency factory — checks that the current user has one of the given roles.
+
+    Works whether user.role is a plain string (VARCHAR column) or a UserRole enum.
+    """
+    # Normalise the allowed roles to plain strings for comparison
+    allowed = {r.value if hasattr(r, "value") else str(r) for r in roles}
+
     async def _check(current_user: UserDB = Depends(get_current_user)) -> UserDB:
-        if current_user.role not in roles:
+        # Normalise user's role to a plain string as well
+        user_role = current_user.role
+        if hasattr(user_role, "value"):
+            user_role = user_role.value
+        else:
+            user_role = str(user_role)
+
+        if user_role not in allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Required roles: {[r.value for r in roles]}",
+                detail=f"Access denied. Required roles: {list(allowed)}",
             )
         return current_user
+
     return _check

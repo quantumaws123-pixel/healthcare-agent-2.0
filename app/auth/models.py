@@ -1,12 +1,6 @@
 """User ORM model — stored in the same DB as patient data."""
 import enum
-from sqlalchemy import (
-    Column,
-    String,
-    Boolean,
-    TIMESTAMP,
-    Enum,
-)
+from sqlalchemy import Column, String, Boolean, TIMESTAMP
 from sqlalchemy.sql import func
 from app.database.models import Base
 
@@ -26,7 +20,8 @@ class UserDB(Base):
     google_id       = Column(String(255), unique=True,  nullable=True, index=True)
     name            = Column(String(100), nullable=True)
     avatar_url      = Column(String(500), nullable=True)
-    role            = Column(Enum(UserRole, name="userrole"), nullable=False, default=UserRole.patient)
+    # role is stored as VARCHAR(20) in the DB — keep it as String to match the migration
+    role            = Column(String(20),  nullable=False, default="patient")
     is_active       = Column(Boolean,     default=True,  nullable=False)
     created_at      = Column(TIMESTAMP,   server_default=func.now(), nullable=False)
     updated_at      = Column(TIMESTAMP,   server_default=func.now(), onupdate=func.now(), nullable=False)
