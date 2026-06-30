@@ -20,6 +20,10 @@ from sqlalchemy.sql import func
 
 Base = declarative_base()
 
+# Import auth models so Base.metadata includes the users table
+# (imported after Base is defined to avoid circular imports)
+
+
 
 class PatientRecordDB(Base):
     """Patient record table with composite primary key (patient_id, day).

@@ -16,7 +16,13 @@ export const queryClient = new QueryClient({
 export function createRouter() {
   const router = createTanStackRouter({
     routeTree,
-    context: { queryClient },
+    context: {
+      queryClient,
+      auth: {
+        user: null,
+        isAuthenticated: false,
+      },
+    },
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
   });

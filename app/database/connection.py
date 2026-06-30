@@ -175,6 +175,8 @@ async def init_db() -> None:
         )
         
         # Create all tables (idempotent operation)
+        # Import auth models so users table is included in Base.metadata
+        from app.auth.models import UserDB  # noqa: F401
         async with _engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         

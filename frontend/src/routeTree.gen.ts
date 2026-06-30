@@ -11,8 +11,10 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as LoginImport } from './routes/login'
 import { Route as AppImport } from './routes/_app'
 import { Route as AppIndexImport } from './routes/_app.index'
+import { Route as AuthCallbackImport } from './routes/auth.callback'
 import { Route as AppTwinsImport } from './routes/_app.twins'
 import { Route as AppSettingsImport } from './routes/_app.settings'
 import { Route as AppPatientsImport } from './routes/_app.patients'
@@ -23,6 +25,12 @@ import { Route as AppPatientsPatientIdImport } from './routes/_app.patients.$pat
 
 // Create/Update Routes
 
+const LoginRoute = LoginImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AppRoute = AppImport.update({
   id: '/_app',
   getParentRoute: () => rootRoute,
@@ -32,6 +40,12 @@ const AppIndexRoute = AppIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+
+const AuthCallbackRoute = AuthCallbackImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const AppTwinsRoute = AppTwinsImport.update({
@@ -87,6 +101,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppImport
       parentRoute: typeof rootRoute
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
     '/_app/alerts': {
       id: '/_app/alerts'
       path: '/alerts'
@@ -128,6 +149,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/twins'
       preLoaderRoute: typeof AppTwinsImport
       parentRoute: typeof AppImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackImport
+      parentRoute: typeof rootRoute
     }
     '/_app/': {
       id: '/_app/'
@@ -184,23 +212,27 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 export interface FileRoutesByFullPath {
   '': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/alerts': typeof AppAlertsRoute
   '/analytics': typeof AppAnalyticsRoute
   '/models': typeof AppModelsRoute
   '/patients': typeof AppPatientsRouteWithChildren
   '/settings': typeof AppSettingsRoute
   '/twins': typeof AppTwinsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
 
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/alerts': typeof AppAlertsRoute
   '/analytics': typeof AppAnalyticsRoute
   '/models': typeof AppModelsRoute
   '/patients': typeof AppPatientsRouteWithChildren
   '/settings': typeof AppSettingsRoute
   '/twins': typeof AppTwinsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
@@ -208,12 +240,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/_app/alerts': typeof AppAlertsRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/models': typeof AppModelsRoute
   '/_app/patients': typeof AppPatientsRouteWithChildren
   '/_app/settings': typeof AppSettingsRoute
   '/_app/twins': typeof AppTwinsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
   '/_app/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
@@ -222,33 +256,39 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | ''
+    | '/login'
     | '/alerts'
     | '/analytics'
     | '/models'
     | '/patients'
     | '/settings'
     | '/twins'
+    | '/auth/callback'
     | '/'
     | '/patients/$patientId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/login'
     | '/alerts'
     | '/analytics'
     | '/models'
     | '/patients'
     | '/settings'
     | '/twins'
+    | '/auth/callback'
     | '/'
     | '/patients/$patientId'
   id:
     | '__root__'
     | '/_app'
+    | '/login'
     | '/_app/alerts'
     | '/_app/analytics'
     | '/_app/models'
     | '/_app/patients'
     | '/_app/settings'
     | '/_app/twins'
+    | '/auth/callback'
     | '/_app/'
     | '/_app/patients/$patientId'
   fileRoutesById: FileRoutesById
@@ -256,10 +296,14 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 
 export const routeTree = rootRoute
@@ -272,7 +316,9 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/_app"
+        "/_app",
+        "/login",
+        "/auth/callback"
       ]
     },
     "/_app": {
@@ -286,6 +332,9 @@ export const routeTree = rootRoute
         "/_app/twins",
         "/_app/"
       ]
+    },
+    "/login": {
+      "filePath": "login.tsx"
     },
     "/_app/alerts": {
       "filePath": "_app.alerts.tsx",
@@ -313,6 +362,9 @@ export const routeTree = rootRoute
     "/_app/twins": {
       "filePath": "_app.twins.tsx",
       "parent": "/_app"
+    },
+    "/auth/callback": {
+      "filePath": "auth.callback.tsx"
     },
     "/_app/": {
       "filePath": "_app.index.tsx",

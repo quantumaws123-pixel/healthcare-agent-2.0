@@ -14,6 +14,8 @@ import type {
   PatientSummaryResponse,
 } from "@/types";
 
+import { getAccessToken } from "@/lib/auth";
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 /* ── Base fetch helper ──────────────────────────────────────────────────── */
@@ -22,10 +24,12 @@ async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
+  const token = getAccessToken();
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     ...options,
   });
