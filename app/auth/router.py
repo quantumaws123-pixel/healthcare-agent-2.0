@@ -108,11 +108,12 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
     
     logger.info("Registered user %s role=%s status=%s", user.email, user.role, user.status)
     
-    # If doctor, return special message
+    # If doctor, return special message (use JSONResponse to avoid raising an exception and triggering traceback logging in get_db_session)
     if status == "pending":
-        raise HTTPException(
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
             status_code=202,
-            detail="Doctor registration submitted. Your account is pending admin approval."
+            content={"detail": "Doctor registration submitted. Your account is pending admin approval."}
         )
     
     return _tokens(user)
