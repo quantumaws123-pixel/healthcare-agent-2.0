@@ -31,13 +31,25 @@ def _tokens(user: UserDB) -> TokenResponse:
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_session)):
-    if (await db.execute(select(UserDB).where(UserDB.email == body.email))).scalar_one_or_none():
-        raise HTTPException(400, "Email already registered")
-    user = UserDB(id=str(uuid.uuid4()), email=body.email,
-                  hashed_password=pwd_ctx.hash(body.password),
-                  name=body.name, role=body.role.value if hasattr(body.role, 'value') else str(body.role))
-    db.add(user); await db.flush(); await db.refresh(user)
-    return _tokens(user)
+    try:
+        if (await db.execute(select(UserDB).where(UserDB.email == body.email))).scalar_one_or_none():
+            raise HTTPException(400, "Email already registered")
+        user = UserDB(
+            id=str(uuid.uuid4()),
+            email=body.email,
+            hashed_password=pwd_ctx.hash(body.password),
+            name=body.name,
+            role=body.role if isinstance(body.role, str) else str(body.role),
+        )
+        db.add(user)
+        await db.flush()
+        await db.refresh(user)
+        return _tokens(user)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Register error: %s", exc, exc_info=True)
+        raise HTTPException(500, f"Registration failed: {str(exc)}")
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db_session)):
