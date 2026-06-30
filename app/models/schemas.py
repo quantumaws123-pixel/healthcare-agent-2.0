@@ -76,6 +76,7 @@ class PatientRecord(BaseModel):
         return v
     
     model_config = {
+        "from_attributes": True,
         "json_schema_extra": {
             "example": {
                 "patient_id": "P001",

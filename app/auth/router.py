@@ -243,28 +243,9 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
                 user.name = info.get("name")
             await db.flush()
         else:
-            # New user via Google — default role is patient
-            user = UserDB(
-                id=str(uuid.uuid4()),
-                email=email,
-                google_id=google_id,
-                name=info.get("name"),
-                avatar_url=info.get("picture"),
-                role="patient",
-                status="approved",
-                is_active=True,
-            )
-            db.add(user)
-            await db.flush()
-            await db.refresh(user)
-            
-            # Create patient profile for new Google OAuth users
-            from app.database.models import PatientProfileDB
-            patient_profile = PatientProfileDB(
-                id=str(uuid.uuid4()),
-                user_id=user.id,
-            )
-            db.add(patient_profile)
+            # Unregistered Google login — block and redirect to login page
+            logger.warning("Google login attempt for unregistered email: %s", email)
+            return RedirectResponse(f"{FRONTEND_URL}/login?error=google_not_registered")
 
         # Automatically verify and initialize patient records if missing
         role_str = _get_role_str(user)

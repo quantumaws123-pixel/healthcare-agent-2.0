@@ -33,70 +33,50 @@ export type DoctorRecommendation =
 
 export interface PatientRecord {
   // Identity
-  Patient_ID: string;
-  Age: number;
-  Gender: "Male" | "Female" | "Other";
-  Height_cm: number;
-  Weight_kg: number;
-  BMI: number;
-  Disease_Type: DiseaseType;
-  Comorbidities: string;
-  Smoking_Status: "Never" | "Former" | "Current";
-  Alcohol_Consumption: "None" | "Occasional" | "Moderate" | "Heavy";
-  Allergy_Status: string;
+  patient_id: string;
+  patient_name?: string;
+  age: number;
+  gender: "Male" | "Female" | "Other";
+  bmi: number;
+  disease_type: DiseaseType;
+  smoking_status?: "Never" | "Former" | "Current";
+  alcohol_consumption?: "None" | "Occasional" | "Moderate" | "Heavy";
 
   // Monitoring day
-  Day: number;
+  day?: number;
 
   // Clinical vitals
-  Heart_Rate: number;
-  Systolic_BP: number;
-  Diastolic_BP: number;
-  SpO2: number;
-  Respiratory_Rate: number;
-  Body_Temperature: number;
-  Blood_Glucose: number | null;
-  Cholesterol: number | null;
-
-  // Subjective measures
-  Pain_Level: number;
-  Fatigue_Score: number;
-  Symptom_Severity: number;
+  heart_rate: number;
+  systolic_bp: number;
+  diastolic_bp: number;
+  spo2: number;
+  respiratory_rate: number;
+  body_temperature: number;
 
   // Ideal Twin (doctor plan)
-  Medication_Name: string;
-  Medication_Dosage: string;
-  Medication_Frequency: string;
-  Expected_Steps: number;
-  Expected_Sleep_Hours: number;
-  Diet_Plan: string;
-  Water_Intake_Goal: number;
-  Exercise_Plan: string;
-  Follow_Up_Date: string;
+  expected_steps: number;
+  expected_sleep_hours: number;
+  water_intake_goal: number;
 
   // Real Twin (actual behaviour)
-  Actual_Steps: number;
-  Medication_Taken: "Yes" | "No";
-  Actual_Sleep_Hours: number;
-  Water_Intake: number;
-  Exercise_Completed: "Yes" | "No";
-  Diet_Compliance: number;
-  Mood: string | null;
-  Symptoms: string;
-  Missed_Medication_Count: number;
-  Missed_Exercise_Count: number;
+  actual_steps: number;
+  medication_taken: "Yes" | "No";
+  actual_sleep_hours: number;
+  water_intake: number;
+  exercise_completed: "Yes" | "No";
+  diet_compliance: number;
 
   // AI outputs
-  Compliance_Score: number;
-  Ideal_Health_Score: number;
-  Real_Health_Score: number;
-  Deviation_Score: number;
-  Recovery_Score: number;
-  Health_Trend: HealthTrend;
-  Readmission_Probability: number;
-  Risk_Level: RiskLevel;
-  Recovery_Status: RecoveryStatus;
-  Doctor_Recommendation: DoctorRecommendation;
+  compliance_score?: number;
+  ideal_health_score?: number;
+  real_health_score?: number;
+  deviation_score?: number;
+  recovery_score?: number;
+  health_trend?: HealthTrend;
+  readmission_probability?: number;
+  risk_level?: RiskLevel;
+  recovery_status?: RecoveryStatus;
+  doctor_recommendation?: string;
 }
 
 /* ── Summarised patient (latest day) ──────────────────────────────────── */

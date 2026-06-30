@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.connection import get_db_session
 from app.repositories.patient_repository import PatientRepository
+from app.models.schemas import PatientRecord
 from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
@@ -195,10 +196,42 @@ async def list_patients(
         total_pages=total_pages,
     )
 
+# ---------------------------------------------------------------------------
+# GET /patients/{patient_id}/latest
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/{patient_id}/latest",
+    response_model=PatientRecord,
+    summary="Get the latest patient record including vitals",
+    description="Returns the latest daily record for the specified patient.",
+)
+async def get_latest_patient_record(
+    patient_id: str,
+    db: AsyncSession = Depends(get_db_session),
+) -> PatientRecord:
+    """
+    GET /patients/{patient_id}/latest
+    """
+    repo = PatientRepository(db)
+    try:
+        record = await repo.get_patient_by_id(patient_id=patient_id)
+    except Exception as exc:
+        logger.error("Error fetching latest record for patient %s: %s", patient_id, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve latest patient record") from exc
+
+    if not record:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Patient record for '{patient_id}' not found",
+        )
+    return record
+
 
 # ---------------------------------------------------------------------------
 # GET /patients/{patient_id}/summary
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/{patient_id}/summary",

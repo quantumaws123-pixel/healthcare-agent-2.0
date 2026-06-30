@@ -78,6 +78,10 @@ export function getPatientSummary(patientId: string): Promise<PatientSummaryResp
   return apiFetch<PatientSummaryResponse>(`/patients/${encodeURIComponent(patientId)}/summary`);
 }
 
+export function getLatestPatientRecord(patientId: string): Promise<PatientRecord> {
+  return apiFetch<PatientRecord>(`/patients/${encodeURIComponent(patientId)}/latest`);
+}
+
 /* ── Prediction ─────────────────────────────────────────────────────────── */
 
 export function predict(record: Partial<PatientRecord>): Promise<PredictionResponse> {
@@ -120,6 +124,8 @@ export const queryKeys = {
     ["patients", params] as const,
   patientSummary: (id: string) =>
     ["patient-summary", id] as const,
+  patientLatest: (id: string) =>
+    ["patient-latest", id] as const,
   dashboardStats: () =>
     ["dashboard-stats"] as const,
   prediction: (recordHash: string) =>

@@ -13,6 +13,7 @@ const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   google_profile_incomplete: "Google sign-in failed: your Google account is missing required information.",
   google_unexpected_error:   "Google sign-in encountered an unexpected error. Please try again.",
   google_auth_failed:        "Google sign-in failed. Please try again or use email/password.",
+  google_not_registered:     "This Google account is not registered. Please wait until the administrator registers your account.",
 };
 
 export const Route = createFileRoute("/login")({
