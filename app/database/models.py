@@ -22,6 +22,7 @@ Base = declarative_base()
 
 # Import auth models so Base.metadata includes the users table
 # (imported after Base is defined to avoid circular imports)
+from app.auth.models import UserDB  # noqa: F401
 
 
 
