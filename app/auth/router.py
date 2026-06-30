@@ -134,38 +134,91 @@ async def google_login():
 
 @router.get("/google/callback")
 async def google_callback(code: str, db: AsyncSession = Depends(get_db_session)):
+    """Handle Google OAuth2 callback — exchange code for tokens and redirect to frontend."""
     redir = f"{BACKEND_URL}/auth/google/callback"
-    async with httpx.AsyncClient() as c:
-        tr = await c.post("https://oauth2.googleapis.com/token", data={
-            "code": code, "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri": redir, "grant_type": "authorization_code"})
-    if tr.status_code != 200:
-        raise HTTPException(400, "Google token exchange failed")
-    async with httpx.AsyncClient() as c:
-        ir = await c.get("https://www.googleapis.com/oauth2/v2/userinfo",
-                         headers={"Authorization": f"Bearer {tr.json()['access_token']}"})
-    if ir.status_code != 200:
-        raise HTTPException(400, "Failed to fetch Google profile")
-    info = ir.json()
-    user = (await db.execute(select(UserDB).where(UserDB.google_id == info["id"]))).scalar_one_or_none()
-    if not user:
-        user = (await db.execute(select(UserDB).where(UserDB.email == info["email"]))).scalar_one_or_none()
-    if user:
-        user.google_id = user.google_id or info["id"]
-        user.avatar_url = info.get("picture")
-        await db.flush()
-    else:
-        user = UserDB(id=str(uuid.uuid4()), email=info["email"],
-                      google_id=info["id"], name=info.get("name"),
-                      avatar_url=info.get("picture"), role="patient")
-        db.add(user)
-        await db.flush()
-        await db.refresh(user)
-    await db.commit()
-    role_str = _get_role_str(user)
-    a = create_access_token(user.id, role_str)
-    r = create_refresh_token(user.id)
-    return RedirectResponse(
-        f"{FRONTEND_URL}/auth/callback?access_token={a}&refresh_token={r}&role={role_str}"
-    )
+    error_redirect = f"{FRONTEND_URL}/login?error=google_auth_failed"
+
+    try:
+        # Step 1: Exchange auth code for Google tokens
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            tr = await c.post("https://oauth2.googleapis.com/token", data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redir,
+                "grant_type": "authorization_code",
+            })
+
+        if tr.status_code != 200:
+            logger.error(
+                "Google token exchange failed: status=%s body=%s "
+                "client_id_set=%s secret_set=%s redirect_uri=%s",
+                tr.status_code, tr.text[:500],
+                bool(GOOGLE_CLIENT_ID), bool(GOOGLE_CLIENT_SECRET), redir,
+            )
+            return RedirectResponse(f"{FRONTEND_URL}/login?error=google_token_failed")
+
+        google_tokens = tr.json()
+        access_token_google = google_tokens.get("access_token")
+        if not access_token_google:
+            logger.error("Google token response missing access_token: %s", google_tokens)
+            return RedirectResponse(f"{FRONTEND_URL}/login?error=google_token_missing")
+
+        # Step 2: Fetch the user's Google profile
+        async with httpx.AsyncClient(timeout=10.0) as c:
+            ir = await c.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token_google}"},
+            )
+
+        if ir.status_code != 200:
+            logger.error("Google userinfo failed: status=%s body=%s", ir.status_code, ir.text[:300])
+            return RedirectResponse(f"{FRONTEND_URL}/login?error=google_profile_failed")
+
+        info = ir.json()
+        google_id = info.get("id") or info.get("sub")
+        email     = info.get("email")
+
+        if not google_id or not email:
+            logger.error("Google profile missing required fields: %s", info)
+            return RedirectResponse(f"{FRONTEND_URL}/login?error=google_profile_incomplete")
+
+        # Step 3: Upsert user in DB
+        user = (await db.execute(select(UserDB).where(UserDB.google_id == google_id))).scalar_one_or_none()
+        if not user:
+            user = (await db.execute(select(UserDB).where(UserDB.email == email))).scalar_one_or_none()
+
+        if user:
+            # Existing user — link Google ID and refresh avatar
+            if not user.google_id:
+                user.google_id = google_id
+            user.avatar_url = info.get("picture") or user.avatar_url
+            await db.flush()
+        else:
+            # New user via Google — default role is patient
+            user = UserDB(
+                id=str(uuid.uuid4()),
+                email=email,
+                google_id=google_id,
+                name=info.get("name"),
+                avatar_url=info.get("picture"),
+                role="patient",
+            )
+            db.add(user)
+            await db.flush()
+            await db.refresh(user)
+
+        await db.commit()
+
+        role_str = _get_role_str(user)
+        a = create_access_token(user.id, role_str)
+        r = create_refresh_token(user.id)
+        logger.info("Google OAuth success: user=%s role=%s", email, role_str)
+
+        return RedirectResponse(
+            f"{FRONTEND_URL}/auth/callback?access_token={a}&refresh_token={r}&role={role_str}"
+        )
+
+    except Exception as exc:
+        logger.exception("Unexpected error in Google OAuth callback: %s", exc)
+        return RedirectResponse(f"{FRONTEND_URL}/login?error=google_unexpected_error")

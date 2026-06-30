@@ -1,10 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Mail, Lock, User, Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getGoogleLoginUrl, type Role } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  google_token_failed:       "Google sign-in failed: could not exchange authorisation code. Please try again.",
+  google_token_missing:      "Google sign-in failed: no access token received from Google.",
+  google_profile_failed:     "Google sign-in failed: could not retrieve your Google profile.",
+  google_profile_incomplete: "Google sign-in failed: your Google account is missing required information.",
+  google_unexpected_error:   "Google sign-in encountered an unexpected error. Please try again.",
+  google_auth_failed:        "Google sign-in failed. Please try again or use email/password.",
+};
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -29,6 +38,17 @@ function LoginPage() {
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+
+  // Show error messages redirected back from the Google OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errCode = params.get("error");
+    if (errCode) {
+      setError(GOOGLE_ERROR_MESSAGES[errCode] ?? "Sign-in failed. Please try again.");
+      // Remove the ?error= param from the URL so it doesn't persist on refresh
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
