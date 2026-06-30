@@ -4,6 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 
@@ -31,7 +32,7 @@ class AdminUserOut(BaseModel):
     role: str
     status: str
     is_active: bool
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
