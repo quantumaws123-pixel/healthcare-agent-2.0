@@ -64,8 +64,12 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Normalise role to a plain string (the DB column is VARCHAR, not an enum type)
+    # Normalize role to a plain string
     role_str = body.role if isinstance(body.role, str) else str(body.role)
+    
+    # Doctors start as pending, others are approved immediately
+    status = "pending" if role_str == "doctor" else "approved"
+    is_active = status == "approved"  # Only approved users can login
 
     user = UserDB(
         id=str(uuid.uuid4()),
@@ -73,14 +77,40 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
         hashed_password=hash_password(body.password),
         name=body.name,
         role=role_str,
-        is_active=True,
+        status=status,
+        is_active=is_active,
     )
     db.add(user)
     await db.flush()
+    
+    # Create profile based on role
+    if role_str == "doctor":
+        from app.database.models import DoctorProfileDB
+        doctor_profile = DoctorProfileDB(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+        )
+        db.add(doctor_profile)
+    elif role_str == "patient":
+        from app.database.models import PatientProfileDB
+        patient_profile = PatientProfileDB(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+        )
+        db.add(patient_profile)
+    
     await db.refresh(user)
-    # commit so the row is actually persisted (flush alone only buffers it)
     await db.commit()
-    logger.info("Registered user %s role=%s", user.email, user.role)
+    
+    logger.info("Registered user %s role=%s status=%s", user.email, user.role, user.status)
+    
+    # If doctor, return special message
+    if status == "pending":
+        raise HTTPException(
+            status_code=202,
+            detail="Doctor registration submitted. Your account is pending admin approval."
+        )
+    
     return _tokens(user)
 
 
@@ -100,6 +130,10 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db_session)):
         raise HTTPException(401, "Invalid email or password")
     if not user.is_active:
         raise HTTPException(403, "Account disabled")
+    if user.status == "pending":
+        raise HTTPException(403, "Your account is pending admin approval")
+    if user.status == "rejected":
+        raise HTTPException(403, "Your account application was rejected")
     return _tokens(user)
 
 
@@ -189,13 +223,14 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
             user = (await db.execute(select(UserDB).where(UserDB.email == email))).scalar_one_or_none()
 
         if user:
-            # Existing user — link Google ID and refresh avatar
+            # Existing user — link Google ID and refresh avatar, name
             if not user.google_id:
                 user.google_id = google_id
             user.avatar_url = info.get("picture") or user.avatar_url
+            user.name = info.get("name") or user.name  # Update name from Google
             await db.flush()
         else:
-            # New user via Google — default role is patient
+            # New user via Google — default role is patient (auto-approved)
             user = UserDB(
                 id=str(uuid.uuid4()),
                 email=email,
@@ -203,10 +238,20 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
                 name=info.get("name"),
                 avatar_url=info.get("picture"),
                 role="patient",
+                status="approved",
+                is_active=True,
             )
             db.add(user)
             await db.flush()
             await db.refresh(user)
+            
+            # Create patient profile for new Google OAuth users
+            from app.database.models import PatientProfileDB
+            patient_profile = PatientProfileDB(
+                id=str(uuid.uuid4()),
+                user_id=user.id,
+            )
+            db.add(patient_profile)
 
         await db.commit()
 

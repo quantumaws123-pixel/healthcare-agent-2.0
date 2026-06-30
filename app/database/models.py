@@ -170,3 +170,35 @@ class MLModelDB(Base):
             f"model_type={self.model_type}, "
             f"is_active={self.is_active})>"
         )
+
+
+
+class DoctorProfileDB(Base):
+    """Doctor profile table - extends user account with doctor-specific information."""
+    
+    __tablename__ = "doctor_profiles"
+    
+    id = Column(String(50), primary_key=True)
+    user_id = Column(String(50), nullable=False, unique=True, index=True)
+    specialization = Column(String(100), nullable=True)
+    hospital = Column(String(200), nullable=True)
+    experience_years = Column(Integer, nullable=True)
+    approved_by = Column(String(50), nullable=True)
+    approved_at = Column(TIMESTAMP, nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class PatientProfileDB(Base):
+    """Patient profile table - links user account to patient health records."""
+    
+    __tablename__ = "patient_profiles"
+    
+    id = Column(String(50), primary_key=True)
+    user_id = Column(String(50), nullable=False, unique=True, index=True)
+    patient_id = Column(String(50), nullable=True, index=True)  # Links to patient_records
+    assigned_doctor_id = Column(String(50), nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String(10), nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), nullable=False)

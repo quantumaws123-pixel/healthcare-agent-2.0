@@ -24,7 +24,6 @@ type Tab = "login" | "register";
 const ROLES: { value: Role; label: string; desc: string }[] = [
   { value: "patient", label: "Patient",  desc: "Monitor my recovery & health data" },
   { value: "doctor",  label: "Doctor",   desc: "Manage and monitor my patients" },
-  { value: "admin",   label: "Admin",    desc: "Full system access and management" },
 ];
 
 function LoginPage() {
@@ -57,10 +56,22 @@ function LoginPage() {
     try {
       if (tab === "login") {
         await login(email, password);
+        navigate({ to: "/" });
       } else {
-        await register(email, password, name, role);
+        // Handle registration
+        try {
+          await register(email, password, name, role);
+          navigate({ to: "/" });
+        } catch (err: any) {
+          // Check if it's doctor pending approval (202)
+          if (err?.message?.includes("pending") || err?.message?.includes("approval")) {
+            setError("✅ Registration successful! Your doctor account is pending admin approval. You will receive an email once approved.");
+            setTab("login"); // Switch to login tab
+            return;
+          }
+          throw err; // Re-throw other errors
+        }
       }
-      navigate({ to: "/" });
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong. Please try again.");
     } finally {
@@ -203,27 +214,32 @@ function LoginPage() {
                     exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
                   >
                     <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Account Type</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {ROLES.map(r => (
                         <button
                           key={r.value} type="button" onClick={() => setRole(r.value)}
                           className={cn(
-                            "flex flex-col items-center gap-1 p-3 rounded-xl border text-xs font-medium transition-all",
+                            "flex flex-col items-center gap-2 p-4 rounded-xl border text-sm font-medium transition-all",
                             role === r.value
                               ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300"
                               : "border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300"
                           )}
                         >
-                          <span className="text-base">
-                            {r.value === "patient" ? "🧑‍⚕️" : r.value === "doctor" ? "👨‍⚕️" : "🔒"}
+                          <span className="text-2xl">
+                            {r.value === "patient" ? "🧑‍⚕️" : "👨‍⚕️"}
                           </span>
                           {r.label}
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-400 mt-1.5 text-center">
+                    <p className="text-xs text-gray-400 mt-2 text-center">
                       {ROLES.find(r => r.value === role)?.desc}
                     </p>
+                    {role === "doctor" && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
+                        ⚠️ Doctor accounts require admin approval before activation
+                      </p>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
