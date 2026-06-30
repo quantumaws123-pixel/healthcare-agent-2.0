@@ -253,6 +253,15 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
         if role_str == "patient":
             from app.auth.patient_setup import ensure_patient_records
             await ensure_patient_records(user.id, user.email, user.name, db)
+            
+            # Update all existing patient records with their Google name
+            from app.database.models import PatientRecordDB
+            from sqlalchemy import update
+            await db.execute(
+                update(PatientRecordDB)
+                .where(PatientRecordDB.patient_id == user.id)
+                .values(patient_name=user.name)
+            )
 
         await db.commit()
 
@@ -264,10 +273,12 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
 
         name_param = urllib.parse.quote(user.name or "")
         avatar_param = urllib.parse.quote(user.avatar_url or "")
+        id_param = user.id
+        email_param = urllib.parse.quote(user.email)
 
         return RedirectResponse(
             f"{FRONTEND_URL}/auth/callback?access_token={a}&refresh_token={r}&role={role_str}"
-            f"&name={name_param}&avatar_url={avatar_param}"
+            f"&name={name_param}&avatar_url={avatar_param}&id={id_param}&email={email_param}"
         )
 
     except Exception as exc:

@@ -22,14 +22,16 @@ function AuthCallback() {
     const role          = params.get("role");
     const name          = params.get("name");
     const avatar_url    = params.get("avatar_url");
+    const id            = params.get("id");
+    const email         = params.get("email");
 
     if (access_token && refresh_token && role) {
       const existing = getStoredUser();
       const user: AuthUser = {
-        id: existing?.id || "",
-        email: existing?.email || "",
-        name: name || existing?.name || null,
-        avatar_url: avatar_url || existing?.avatar_url || null,
+        id: id || existing?.id || "",
+        email: email ? decodeURIComponent(email) : (existing?.email || ""),
+        name: name ? decodeURIComponent(name) : (existing?.name || null),
+        avatar_url: avatar_url ? decodeURIComponent(avatar_url) : (existing?.avatar_url || null),
         role: role as any,
         is_active: existing?.is_active ?? true,
       };

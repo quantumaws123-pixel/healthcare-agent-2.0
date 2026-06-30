@@ -47,6 +47,15 @@
   --color-muted-foreground: #9ca3af;
   --color-placeholder:      #d1d5db;
 
+  --color-primary-50:       #eff6ff;
+  --color-primary-500:      #3b82f6;
+  --color-primary-600:      #2563eb;
+  --color-danger-50:        #fff1f2;
+  --color-danger-400:       #fb7185;
+  --color-danger-500:       #f43f5e;
+  --color-success-500:      #22c55e;
+  --color-warning-500:      #f59e0b;
+
   --radius-sm:  0.5rem;
   --radius-md:  0.75rem;
   --radius-lg:  1rem;
@@ -75,6 +84,15 @@
   --color-muted:            #636366;
   --color-muted-foreground: #8e8e93;
   --color-placeholder:      #636366;
+
+  --color-primary-50:       rgba(59, 130, 246, 0.15);
+  --color-primary-500:      #3b82f6;
+  --color-primary-600:      #2563eb;
+  --color-danger-50:        rgba(244, 63, 94, 0.15);
+  --color-danger-400:       #fb7185;
+  --color-danger-500:       #f43f5e;
+  --color-success-500:      #22c55e;
+  --color-warning-500:      #f59e0b;
 }
 
 /* ─── Shimmer keyframe ───────────────────────────────────────────────── */
