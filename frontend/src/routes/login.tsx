@@ -154,7 +154,7 @@ function LoginPage() {
                       <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input
                         type="text" value={name} onChange={e => setName(e.target.value)}
-                        placeholder="Dr. John Smith"
+                        placeholder="Dr. John Smith" autoComplete="off"
                         className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
                       />
                     </div>
@@ -169,7 +169,7 @@ function LoginPage() {
                   <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="email" value={email} onChange={e => setEmail(e.target.value)}
-                    placeholder="you@hospital.com" required
+                    placeholder="you@hospital.com" required autoComplete="email"
                     className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
                   />
                 </div>
@@ -185,6 +185,7 @@ function LoginPage() {
                     onChange={e => setPassword(e.target.value)}
                     placeholder={tab === "register" ? "Min. 8 characters" : "Your password"}
                     required minLength={tab === "register" ? 8 : undefined}
+                    autoComplete={tab === "register" ? "new-password" : "current-password"}
                     className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
                   />
                   <button type="button" onClick={() => setShowPw(v => !v)}
