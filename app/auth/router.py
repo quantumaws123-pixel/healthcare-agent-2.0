@@ -35,7 +35,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
         raise HTTPException(400, "Email already registered")
     user = UserDB(id=str(uuid.uuid4()), email=body.email,
                   hashed_password=pwd_ctx.hash(body.password),
-                  name=body.name, role=body.role)
+                  name=body.name, role=body.role.value if hasattr(body.role, 'value') else str(body.role))
     db.add(user); await db.flush(); await db.refresh(user)
     return _tokens(user)
 
