@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from passlib.context import CryptContext
+import bcrypt
 import httpx
 
 from app.database.connection import get_db_session
@@ -15,7 +15,21 @@ from app.auth.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    pw_bytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pw_bytes, salt).decode("utf-8")
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    if not hashed_password:
+        return False
+    pw_bytes = password.encode("utf-8")
+    hash_bytes = hashed_password.encode("utf-8")
+    try:
+        return bcrypt.checkpw(pw_bytes, hash_bytes)
+    except Exception:
+        return False
 
 GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
@@ -39,7 +53,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
     user = UserDB(
         id=str(uuid.uuid4()),
         email=body.email,
-        hashed_password=pwd_ctx.hash(body.password),
+        hashed_password=hash_password(body.password),
         name=body.name,
         role=role_str,
         is_active=True,
@@ -62,7 +76,7 @@ async def debug_register(db: AsyncSession = Depends(get_db_session)):
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db_session)):
     user = (await db.execute(select(UserDB).where(UserDB.email == body.email))).scalar_one_or_none()
-    if not user or not user.hashed_password or not pwd_ctx.verify(body.password, user.hashed_password):
+    if not user or not user.hashed_password or not verify_password(body.password, user.hashed_password):
         raise HTTPException(401, "Invalid email or password")
     if not user.is_active:
         raise HTTPException(403, "Account disabled")
