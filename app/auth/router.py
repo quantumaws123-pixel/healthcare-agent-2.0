@@ -31,25 +31,33 @@ def _tokens(user: UserDB) -> TokenResponse:
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_session)):
-    try:
-        if (await db.execute(select(UserDB).where(UserDB.email == body.email))).scalar_one_or_none():
-            raise HTTPException(400, "Email already registered")
-        user = UserDB(
-            id=str(uuid.uuid4()),
-            email=body.email,
-            hashed_password=pwd_ctx.hash(body.password),
-            name=body.name,
-            role=body.role if isinstance(body.role, str) else str(body.role),
-        )
-        db.add(user)
-        await db.flush()
-        await db.refresh(user)
-        return _tokens(user)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.error("Register error: %s", exc, exc_info=True)
-        raise HTTPException(500, f"Registration failed: {str(exc)}")
+    existing = (await db.execute(select(UserDB).where(UserDB.email == body.email))).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    role_str = body.role if isinstance(body.role, str) else str(body.role)
+    user = UserDB(
+        id=str(uuid.uuid4()),
+        email=body.email,
+        hashed_password=pwd_ctx.hash(body.password),
+        name=body.name,
+        role=role_str,
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+    logger.info("Registered user %s role=%s", user.email, user.role)
+    return _tokens(user)
+
+
+@router.get("/debug-register")
+async def debug_register(db: AsyncSession = Depends(get_db_session)):
+    """Debug endpoint — tests DB write without auth logic."""
+    from sqlalchemy import text
+    result = await db.execute(text("SELECT COUNT(*) FROM users"))
+    count = result.scalar()
+    return {"users_table_exists": True, "user_count": count}
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db_session)):
