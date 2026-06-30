@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getStoredUser } from "@/lib/auth";
 import { motion } from "framer-motion";
 import { FlaskConical, CheckCircle, AlertCircle, TrendingUp } from "lucide-react";
 import {
@@ -14,6 +15,12 @@ import { Tabs, TabList, TabTrigger, TabPanels, TabPanel } from "@/components/ui/
 import { useModelInfo } from "@/hooks/usePatients";
 
 export const Route = createFileRoute("/_app/models")({
+  beforeLoad: () => {
+    const user = getStoredUser();
+    if (!user || user.role !== "admin") {
+      throw redirect({ to: "/" });
+    }
+  },
   component: ModelsPage,
 });
 

@@ -20,16 +20,20 @@ function AuthCallback() {
     const access_token  = params.get("access_token");
     const refresh_token = params.get("refresh_token");
     const role          = params.get("role");
+    const name          = params.get("name");
+    const avatar_url    = params.get("avatar_url");
 
     if (access_token && refresh_token && role) {
-      // Build a minimal user object from the params — /auth/me would give the full object
-      // but we avoid the extra round-trip by using what Google callback gave us
       const existing = getStoredUser();
-      const user: AuthUser = existing ?? {
-        id: "", email: "", name: null, avatar_url: null,
-        role: role as any, is_active: true,
+      const user: AuthUser = {
+        id: existing?.id || "",
+        email: existing?.email || "",
+        name: name || existing?.name || null,
+        avatar_url: avatar_url || existing?.avatar_url || null,
+        role: role as any,
+        is_active: existing?.is_active ?? true,
       };
-      saveSession({ access_token, refresh_token, token_type: "bearer", user: { ...user, role: role as any } });
+      saveSession({ access_token, refresh_token, token_type: "bearer", user });
     }
 
     // Small delay so the spinner shows briefly

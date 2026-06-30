@@ -98,6 +98,10 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
             user_id=user.id,
         )
         db.add(patient_profile)
+        
+        # Initialize 30 days of time-series clinical records for the patient
+        from app.auth.patient_setup import ensure_patient_records
+        await ensure_patient_records(user.id, user.email, user.name, db)
     
     await db.refresh(user)
     await db.commit()
@@ -134,6 +138,14 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db_session)):
         raise HTTPException(403, "Your account is pending admin approval")
     if user.status == "rejected":
         raise HTTPException(403, "Your account application was rejected")
+        
+    # Automatically verify and initialize patient records if missing
+    role_str = _get_role_str(user)
+    if role_str == "patient":
+        from app.auth.patient_setup import ensure_patient_records
+        await ensure_patient_records(user.id, user.email, user.name, db)
+        await db.commit()
+        
     return _tokens(user)
 
 
@@ -223,14 +235,15 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
             user = (await db.execute(select(UserDB).where(UserDB.email == email))).scalar_one_or_none()
 
         if user:
-            # Existing user — link Google ID and refresh avatar, name
+            # Existing user — link Google ID and refresh avatar
             if not user.google_id:
                 user.google_id = google_id
             user.avatar_url = info.get("picture") or user.avatar_url
-            user.name = info.get("name") or user.name  # Update name from Google
+            if not user.name:
+                user.name = info.get("name")
             await db.flush()
         else:
-            # New user via Google — default role is patient (auto-approved)
+            # New user via Google — default role is patient
             user = UserDB(
                 id=str(uuid.uuid4()),
                 email=email,
@@ -253,17 +266,29 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
             )
             db.add(patient_profile)
 
+        # Automatically verify and initialize patient records if missing
+        role_str = _get_role_str(user)
+        if role_str == "patient":
+            from app.auth.patient_setup import ensure_patient_records
+            await ensure_patient_records(user.id, user.email, user.name, db)
+
         await db.commit()
 
+        import urllib.parse
         role_str = _get_role_str(user)
         a = create_access_token(user.id, role_str)
         r = create_refresh_token(user.id)
         logger.info("Google OAuth success: user=%s role=%s", email, role_str)
 
+        name_param = urllib.parse.quote(user.name or "")
+        avatar_param = urllib.parse.quote(user.avatar_url or "")
+
         return RedirectResponse(
             f"{FRONTEND_URL}/auth/callback?access_token={a}&refresh_token={r}&role={role_str}"
+            f"&name={name_param}&avatar_url={avatar_param}"
         )
 
     except Exception as exc:
         logger.exception("Unexpected error in Google OAuth callback: %s", exc)
         return RedirectResponse(f"{FRONTEND_URL}/login?error=google_unexpected_error")
+

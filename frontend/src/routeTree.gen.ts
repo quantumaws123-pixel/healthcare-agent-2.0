@@ -22,6 +22,8 @@ import { Route as AppModelsImport } from './routes/_app.models'
 import { Route as AppAnalyticsImport } from './routes/_app.analytics'
 import { Route as AppAlertsImport } from './routes/_app.alerts'
 import { Route as AppPatientsPatientIdImport } from './routes/_app.patients.$patientId'
+import { Route as AppAdminDoctorsImport } from './routes/_app.admin.doctors'
+import { Route as AppAdminAdminsImport } from './routes/_app.admin.admins'
 
 // Create/Update Routes
 
@@ -88,6 +90,18 @@ const AppPatientsPatientIdRoute = AppPatientsPatientIdImport.update({
   id: '/$patientId',
   path: '/$patientId',
   getParentRoute: () => AppPatientsRoute,
+} as any)
+
+const AppAdminDoctorsRoute = AppAdminDoctorsImport.update({
+  id: '/admin/doctors',
+  path: '/admin/doctors',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppAdminAdminsRoute = AppAdminAdminsImport.update({
+  id: '/admin/admins',
+  path: '/admin/admins',
+  getParentRoute: () => AppRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -164,6 +178,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexImport
       parentRoute: typeof AppImport
     }
+    '/_app/admin/admins': {
+      id: '/_app/admin/admins'
+      path: '/admin/admins'
+      fullPath: '/admin/admins'
+      preLoaderRoute: typeof AppAdminAdminsImport
+      parentRoute: typeof AppImport
+    }
+    '/_app/admin/doctors': {
+      id: '/_app/admin/doctors'
+      path: '/admin/doctors'
+      fullPath: '/admin/doctors'
+      preLoaderRoute: typeof AppAdminDoctorsImport
+      parentRoute: typeof AppImport
+    }
     '/_app/patients/$patientId': {
       id: '/_app/patients/$patientId'
       path: '/$patientId'
@@ -196,6 +224,8 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppTwinsRoute: typeof AppTwinsRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAdminAdminsRoute: typeof AppAdminAdminsRoute
+  AppAdminDoctorsRoute: typeof AppAdminDoctorsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -206,6 +236,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppTwinsRoute: AppTwinsRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAdminAdminsRoute: AppAdminAdminsRoute,
+  AppAdminDoctorsRoute: AppAdminDoctorsRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -221,6 +253,8 @@ export interface FileRoutesByFullPath {
   '/twins': typeof AppTwinsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
+  '/admin/admins': typeof AppAdminAdminsRoute
+  '/admin/doctors': typeof AppAdminDoctorsRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
 
@@ -234,6 +268,8 @@ export interface FileRoutesByTo {
   '/twins': typeof AppTwinsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
+  '/admin/admins': typeof AppAdminAdminsRoute
+  '/admin/doctors': typeof AppAdminDoctorsRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
 
@@ -249,6 +285,8 @@ export interface FileRoutesById {
   '/_app/twins': typeof AppTwinsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/admin/admins': typeof AppAdminAdminsRoute
+  '/_app/admin/doctors': typeof AppAdminDoctorsRoute
   '/_app/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
 
@@ -265,6 +303,8 @@ export interface FileRouteTypes {
     | '/twins'
     | '/auth/callback'
     | '/'
+    | '/admin/admins'
+    | '/admin/doctors'
     | '/patients/$patientId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -277,6 +317,8 @@ export interface FileRouteTypes {
     | '/twins'
     | '/auth/callback'
     | '/'
+    | '/admin/admins'
+    | '/admin/doctors'
     | '/patients/$patientId'
   id:
     | '__root__'
@@ -290,6 +332,8 @@ export interface FileRouteTypes {
     | '/_app/twins'
     | '/auth/callback'
     | '/_app/'
+    | '/_app/admin/admins'
+    | '/_app/admin/doctors'
     | '/_app/patients/$patientId'
   fileRoutesById: FileRoutesById
 }
@@ -330,7 +374,9 @@ export const routeTree = rootRoute
         "/_app/patients",
         "/_app/settings",
         "/_app/twins",
-        "/_app/"
+        "/_app/",
+        "/_app/admin/admins",
+        "/_app/admin/doctors"
       ]
     },
     "/login": {
@@ -368,6 +414,14 @@ export const routeTree = rootRoute
     },
     "/_app/": {
       "filePath": "_app.index.tsx",
+      "parent": "/_app"
+    },
+    "/_app/admin/admins": {
+      "filePath": "_app.admin.admins.tsx",
+      "parent": "/_app"
+    },
+    "/_app/admin/doctors": {
+      "filePath": "_app.admin.doctors.tsx",
       "parent": "/_app"
     },
     "/_app/patients/$patientId": {

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getStoredUser } from "@/lib/auth";
 import { motion } from "framer-motion";
 import { Brain, Activity, ArrowRightLeft } from "lucide-react";
 import {
@@ -18,6 +19,12 @@ import { usePatients, usePatientSummary } from "@/hooks/usePatients";
 import type { RiskLevel, RecoveryStatus, HealthTrend } from "@/types";
 
 export const Route = createFileRoute("/_app/twins")({
+  beforeLoad: () => {
+    const user = getStoredUser();
+    if (!user || (user.role !== "admin" && user.role !== "doctor")) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: DigitalTwinsPage,
 });
 

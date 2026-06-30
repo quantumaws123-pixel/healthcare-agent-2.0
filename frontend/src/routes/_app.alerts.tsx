@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { getStoredUser } from "@/lib/auth";
 import { motion } from "framer-motion";
 import { AlertTriangle, ChevronRight, Clock, Bell, BellOff, RefreshCw } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/motion";
@@ -13,6 +14,12 @@ import { usePatients } from "@/hooks/usePatients";
 import type { RiskLevel, RecoveryStatus, PatientSummary } from "@/types";
 
 export const Route = createFileRoute("/_app/alerts")({
+  beforeLoad: () => {
+    const user = getStoredUser();
+    if (!user || (user.role !== "admin" && user.role !== "doctor")) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: AlertsPage,
 });
 

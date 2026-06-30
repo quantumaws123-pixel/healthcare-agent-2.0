@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getStoredUser } from "@/lib/auth";
 import { motion } from "framer-motion";
 import { BarChart3, TrendingUp, Users, ShieldCheck } from "lucide-react";
 import {
@@ -13,6 +14,12 @@ import { Tabs, TabList, TabTrigger, TabPanels, TabPanel } from "@/components/ui/
 import { useDashboardStats } from "@/hooks/usePatients";
 
 export const Route = createFileRoute("/_app/analytics")({
+  beforeLoad: () => {
+    const user = getStoredUser();
+    if (!user || (user.role !== "admin" && user.role !== "doctor")) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: AnalyticsPage,
 });
 

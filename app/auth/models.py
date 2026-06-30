@@ -22,7 +22,7 @@ class UserDB(Base):
     avatar_url      = Column(String(500), nullable=True)
     # Use PostgreSQL ENUM type matching the database
     role            = Column(SQLEnum(UserRole, name="userrole", create_type=False), nullable=False, default=UserRole.patient)
-    status          = Column(String(20), nullable=False, default="approved")  # pending, approved, rejected
+    status          = Column(String(20),  nullable=True, default="approved")
     is_active       = Column(Boolean,     default=True,  nullable=False)
     created_at      = Column(TIMESTAMP,   server_default=func.now(), nullable=False)
     updated_at      = Column(TIMESTAMP,   server_default=func.now(), onupdate=func.now(), nullable=False)

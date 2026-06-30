@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { getStoredUser } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChevronRight, RefreshCw } from "lucide-react";
@@ -15,6 +16,12 @@ import { usePatients } from "@/hooks/usePatients";
 import type { RiskLevel, RecoveryStatus, DiseaseType, PatientSummary } from "@/types";
 
 export const Route = createFileRoute("/_app/patients")({
+  beforeLoad: () => {
+    const user = getStoredUser();
+    if (!user || (user.role !== "admin" && user.role !== "doctor")) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: PatientsPage,
 });
 
