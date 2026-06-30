@@ -186,7 +186,7 @@ class TestPatientRepositoryGetById:
     async def test_get_patient_by_id_with_day(self, mock_session, sample_db_record):
         """Test retrieving patient record by ID and day (Requirement 2.4)."""
         # Mock the execute result
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_db_record
         mock_session.execute.return_value = mock_result
         
@@ -200,7 +200,7 @@ class TestPatientRepositoryGetById:
     @pytest.mark.asyncio
     async def test_get_patient_by_id_latest_day(self, mock_session, sample_db_record):
         """Test retrieving latest patient record without specifying day."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_db_record
         mock_session.execute.return_value = mock_result
         
@@ -213,7 +213,7 @@ class TestPatientRepositoryGetById:
     @pytest.mark.asyncio
     async def test_get_patient_by_id_not_found(self, mock_session):
         """Test handling when patient record is not found."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_session.execute.return_value = mock_result
         
@@ -242,11 +242,11 @@ class TestPatientRepositoryGetPaginated:
         ]
         
         # Mock count query
-        mock_count_result = AsyncMock()
+        mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 10
         
         # Mock data query
-        mock_data_result = AsyncMock()
+        mock_data_result = MagicMock()
         mock_data_result.scalars.return_value.all.return_value = mock_records
         
         mock_session.execute.side_effect = [mock_count_result, mock_data_result]
@@ -270,10 +270,10 @@ class TestPatientRepositoryGetPaginated:
             )
         ]
         
-        mock_count_result = AsyncMock()
+        mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 1
         
-        mock_data_result = AsyncMock()
+        mock_data_result = MagicMock()
         mock_data_result.scalars.return_value.all.return_value = mock_records
         
         mock_session.execute.side_effect = [mock_count_result, mock_data_result]
@@ -301,10 +301,10 @@ class TestPatientRepositoryGetPaginated:
             )
         ]
         
-        mock_count_result = AsyncMock()
+        mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 1
         
-        mock_data_result = AsyncMock()
+        mock_data_result = MagicMock()
         mock_data_result.scalars.return_value.all.return_value = mock_records
         
         mock_session.execute.side_effect = [mock_count_result, mock_data_result]
@@ -333,10 +333,10 @@ class TestPatientRepositoryGetPaginated:
             for i in range(11, 21)  # Records 11-20 (page 2)
         ]
         
-        mock_count_result = AsyncMock()
+        mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 50
         
-        mock_data_result = AsyncMock()
+        mock_data_result = MagicMock()
         mock_data_result.scalars.return_value.all.return_value = mock_records
         
         mock_session.execute.side_effect = [mock_count_result, mock_data_result]
@@ -364,7 +364,7 @@ class TestPatientRepositoryGetSummary:
             for i in range(1, 31)
         ]
         
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = mock_records
         mock_session.execute.return_value = mock_result
         
@@ -387,7 +387,7 @@ class TestPatientRepositoryGetSummary:
             for i in range(1, 11)  # Only 10 days available
         ]
         
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = mock_records
         mock_session.execute.return_value = mock_result
         
@@ -403,7 +403,7 @@ class TestPatientRepositoryUpdate:
     @pytest.mark.asyncio
     async def test_update_patient_record_success(self, mock_session, sample_db_record):
         """Test successful patient record update."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_db_record
         mock_session.execute.return_value = mock_result
         
@@ -423,7 +423,7 @@ class TestPatientRepositoryUpdate:
     @pytest.mark.asyncio
     async def test_update_patient_record_not_found(self, mock_session):
         """Test update when patient record doesn't exist."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_session.execute.return_value = mock_result
         
@@ -439,7 +439,7 @@ class TestPatientRepositoryDelete:
     @pytest.mark.asyncio
     async def test_delete_patient_record_specific_day(self, mock_session, sample_db_record):
         """Test deleting specific day record."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_db_record
         mock_session.execute.return_value = mock_result
         
@@ -457,7 +457,7 @@ class TestPatientRepositoryDelete:
             for i in range(1, 6)
         ]
         
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = mock_records
         mock_session.execute.return_value = mock_result
         
@@ -474,7 +474,7 @@ class TestPatientRepositoryCount:
     @pytest.mark.asyncio
     async def test_get_patient_count_no_filters(self, mock_session):
         """Test counting all patients."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar.return_value = 100
         mock_session.execute.return_value = mock_result
         
@@ -486,7 +486,7 @@ class TestPatientRepositoryCount:
     @pytest.mark.asyncio
     async def test_get_patient_count_with_filters(self, mock_session):
         """Test counting patients with filters."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar.return_value = 15
         mock_session.execute.return_value = mock_result
         
@@ -505,7 +505,7 @@ class TestPatientRepositoryGetAllIds:
     @pytest.mark.asyncio
     async def test_get_all_patient_ids(self, mock_session):
         """Test retrieving all unique patient IDs."""
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.all.return_value = [
             ("P001",),
             ("P002",),
