@@ -2,7 +2,13 @@
  * Auth client — login, register, Google OAuth, token storage, refresh.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+export function getApiUrl(): string {
+  const stored = localStorage.getItem("ha_api_url");
+  if (stored) return stored;
+  return import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+}
+
+const BASE_URL = getApiUrl();
 
 export type Role = "admin" | "doctor" | "patient";
 

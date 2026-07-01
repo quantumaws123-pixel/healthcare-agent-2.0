@@ -14,9 +14,9 @@ import type {
   PatientSummaryResponse,
 } from "@/types";
 
-import { getAccessToken } from "@/lib/auth";
+import { getAccessToken, getApiUrl } from "@/lib/auth";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const BASE_URL = getApiUrl();
 
 /* ── Base fetch helper ──────────────────────────────────────────────────── */
 

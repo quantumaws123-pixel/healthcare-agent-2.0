@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Settings, Bell, Shield, Database, Palette, User } from "lucide-react";
+import { useAuthContext } from "@/context/AuthContext";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_app/settings")({
 });
 
 function SettingsPage() {
+  const { user } = useAuthContext();
   const [notifications, setNotifications] = useState({
     highRisk: true,
     medication: true,
@@ -26,6 +28,34 @@ function SettingsPage() {
     complianceWarn: 60,
     deviationAlert: 25,
   });
+
+  const [apiUrl, setApiUrl] = useState(() => {
+    return localStorage.getItem("ha_api_url") || (import.meta.env.VITE_API_URL ?? "http://localhost:8000");
+  });
+  const [testing, setTesting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"success" | "error" | "idle">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    setConnectionStatus("idle");
+    setStatusMessage("Testing connection...");
+    try {
+      const res = await fetch(`${apiUrl}/health/detailed`);
+      if (res.ok) {
+        setConnectionStatus("success");
+        setStatusMessage("Backend reachable and saved successfully!");
+        localStorage.setItem("ha_api_url", apiUrl);
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (err) {
+      setConnectionStatus("error");
+      setStatusMessage("Failed to connect to backend. Please check the URL.");
+    } finally {
+      setTesting(false);
+    }
+  };
 
   return (
     <motion.div
@@ -53,24 +83,24 @@ function SettingsPage() {
               <div className="space-y-4 mt-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Doctor Profile</CardTitle>
+                    <CardTitle className="capitalize">{user?.role ?? "User"} Profile</CardTitle>
                     <CardDescription>Your account information</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <Avatar name="Dr. Smith" size="xl" />
+                      <Avatar name={user?.name ?? "User"} size="xl" />
                       <div>
-                        <p className="font-semibold text-[var(--color-foreground)]">Dr. Smith</p>
-                        <p className="text-sm text-[var(--color-muted)]">Cardiologist · General Hospital</p>
-                        <Badge variant="primary" size="sm" className="mt-1">Attending Physician</Badge>
+                        <p className="font-semibold text-[var(--color-foreground)]">{user?.name ?? "No Name"}</p>
+                        <p className="text-sm text-[var(--color-muted)] capitalize">{user?.role ?? "User"} · General Hospital</p>
+                        <Badge variant="primary" size="sm" className="mt-1 capitalize">{user?.role ?? "User"}</Badge>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
                       {[
-                        { label: "Full Name", value: "Dr. John Smith" },
-                        { label: "Specialty", value: "Cardiology" },
+                        { label: "Full Name", value: user?.name ?? "Not Provided" },
+                        { label: "Role / Permission", value: user?.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : "User" },
+                        { label: "Email Address", value: user?.email ?? "Not Provided" },
                         { label: "Hospital", value: "General Hospital" },
-                        { label: "Email", value: "j.smith@hospital.org" },
                       ].map((f) => (
                         <div key={f.label}>
                           <label className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide">{f.label}</label>
@@ -78,7 +108,6 @@ function SettingsPage() {
                         </div>
                       ))}
                     </div>
-                    <Button variant="secondary" size="sm" className="mt-2">Edit Profile</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -167,13 +196,16 @@ function SettingsPage() {
                       <label className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide">API Base URL</label>
                       <input
                         type="text"
-                        defaultValue="http://localhost:8000"
+                        value={apiUrl}
+                        onChange={(e) => setApiUrl(e.target.value)}
                         className="mt-1 w-full h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[var(--color-success-500)]" />
-                      <span className="text-sm text-[var(--color-muted)]">Backend reachable · Last checked 2s ago</span>
+                      <span className={`w-2 h-2 rounded-full ${connectionStatus === "success" ? "bg-[var(--color-success-500)]" : connectionStatus === "error" ? "bg-[var(--color-danger-500)]" : "bg-gray-400"}`} />
+                      <span className="text-sm text-[var(--color-muted)]">
+                        {statusMessage || (localStorage.getItem("ha_api_url") ? "Backend configured and saved" : "Default environment API active")}
+                      </span>
                     </div>
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       {API_ENDPOINTS.map((ep) => (
@@ -183,7 +215,23 @@ function SettingsPage() {
                         </div>
                       ))}
                     </div>
-                    <Button size="sm" variant="secondary">Test Connection</Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleTestConnection} disabled={testing}>
+                        {testing ? "Testing..." : "Test & Save Connection"}
+                      </Button>
+                      {localStorage.getItem("ha_api_url") && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            localStorage.removeItem("ha_api_url");
+                            window.location.reload();
+                          }}
+                        >
+                          Reset to Default
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
