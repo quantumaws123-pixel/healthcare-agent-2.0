@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Mail, Lock, User, Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/context/AuthContext";
 import { getGoogleLoginUrl, type Role } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ const ROLES: { value: Role; label: string; desc: string }[] = [
 
 function LoginPage() {
   const navigate  = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register } = useAuthContext();
   const [tab,      setTab]      = useState<Tab>("login");
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");

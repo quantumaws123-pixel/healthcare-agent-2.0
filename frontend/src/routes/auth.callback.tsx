@@ -5,8 +5,9 @@
 import { useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Heart, Loader2 } from "lucide-react";
-import { saveSession, getStoredUser } from "@/lib/auth";
+import { getStoredUser } from "@/lib/auth";
 import type { AuthUser } from "@/lib/auth";
+import { useAuthContext } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/auth/callback")({
 
 function AuthCallback() {
   const navigate = useNavigate();
+  const { setFromTokenResponse } = useAuthContext();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -35,12 +37,12 @@ function AuthCallback() {
         role: role as any,
         is_active: existing?.is_active ?? true,
       };
-      saveSession({ access_token, refresh_token, token_type: "bearer", user });
+      setFromTokenResponse({ access_token, refresh_token, token_type: "bearer", user });
     }
 
     // Small delay so the spinner shows briefly
     setTimeout(() => navigate({ to: "/" }), 500);
-  }, [navigate]);
+  }, [navigate, setFromTokenResponse]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-950">
