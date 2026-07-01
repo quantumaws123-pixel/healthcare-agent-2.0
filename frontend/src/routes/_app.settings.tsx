@@ -74,8 +74,12 @@ function SettingsPage() {
           <TabList>
             <TabTrigger id="profile" icon={<User size={14} />}>Profile</TabTrigger>
             <TabTrigger id="notifications" icon={<Bell size={14} />}>Notifications</TabTrigger>
-            <TabTrigger id="thresholds" icon={<Shield size={14} />}>Thresholds</TabTrigger>
-            <TabTrigger id="api" icon={<Database size={14} />}>API</TabTrigger>
+            {user?.role !== "patient" && (
+              <TabTrigger id="thresholds" icon={<Shield size={14} />}>Thresholds</TabTrigger>
+            )}
+            {user?.role === "admin" && (
+              <TabTrigger id="api" icon={<Database size={14} />}>API</TabTrigger>
+            )}
           </TabList>
           <TabPanels>
             {/* Profile */}
@@ -147,95 +151,99 @@ function SettingsPage() {
             </TabPanel>
 
             {/* Thresholds */}
-            <TabPanel id="thresholds">
-              <div className="space-y-4 mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Alert Thresholds</CardTitle>
-                    <CardDescription>Numeric thresholds that trigger risk alerts</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    {Object.entries(thresholds).map(([key, val]) => (
-                      <div key={key}>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-sm font-medium text-[var(--color-foreground)] capitalize">
-                            {key.replace(/([A-Z])/g, " $1")}
-                          </label>
-                          <Badge variant="primary" size="sm">{val}%</Badge>
-                        </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={val}
-                          onChange={(e) => setThresholds(t => ({ ...t, [key]: +e.target.value }))}
-                          className="w-full accent-[var(--color-primary-500)]"
-                        />
-                        <div className="flex justify-between mt-0.5">
-                          <span className="text-[10px] text-[var(--color-muted)]">0%</span>
-                          <span className="text-[10px] text-[var(--color-muted)]">100%</span>
-                        </div>
-                      </div>
-                    ))}
-                    <Button size="sm">Save Thresholds</Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabPanel>
-
-            {/* API */}
-            <TabPanel id="api">
-              <div className="space-y-4 mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>API Configuration</CardTitle>
-                    <CardDescription>Backend connection settings</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide">API Base URL</label>
-                      <input
-                        type="text"
-                        value={apiUrl}
-                        onChange={(e) => setApiUrl(e.target.value)}
-                        className="mt-1 w-full h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${connectionStatus === "success" ? "bg-[var(--color-success-500)]" : connectionStatus === "error" ? "bg-[var(--color-danger-500)]" : "bg-gray-400"}`} />
-                      <span className="text-sm text-[var(--color-muted)]">
-                        {statusMessage || (localStorage.getItem("ha_api_url") ? "Backend configured and saved" : "Default environment API active")}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      {API_ENDPOINTS.map((ep) => (
-                        <div key={ep.path} className="rounded-xl bg-[var(--color-border-subtle)] p-3">
-                          <p className="text-xs font-mono font-semibold text-[var(--color-foreground)]">{ep.method} {ep.path}</p>
-                          <p className="text-[10px] text-[var(--color-muted)] mt-0.5">{ep.desc}</p>
+            {user?.role !== "patient" && (
+              <TabPanel id="thresholds">
+                <div className="space-y-4 mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Alert Thresholds</CardTitle>
+                      <CardDescription>Numeric thresholds that trigger risk alerts</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                      {Object.entries(thresholds).map(([key, val]) => (
+                        <div key={key}>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-sm font-medium text-[var(--color-foreground)] capitalize">
+                              {key.replace(/([A-Z])/g, " $1")}
+                            </label>
+                            <Badge variant="primary" size="sm">{val}%</Badge>
+                          </div>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={val}
+                            onChange={(e) => setThresholds(t => ({ ...t, [key]: +e.target.value }))}
+                            className="w-full accent-[var(--color-primary-500)]"
+                          />
+                          <div className="flex justify-between mt-0.5">
+                            <span className="text-[10px] text-[var(--color-muted)]">0%</span>
+                            <span className="text-[10px] text-[var(--color-muted)]">100%</span>
+                          </div>
                         </div>
                       ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleTestConnection} disabled={testing}>
-                        {testing ? "Testing..." : "Test & Save Connection"}
-                      </Button>
-                      {localStorage.getItem("ha_api_url") && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            localStorage.removeItem("ha_api_url");
-                            window.location.reload();
-                          }}
-                        >
-                          Reset to Default
+                      <Button size="sm">Save Thresholds</Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabPanel>
+            )}
+
+            {/* API */}
+            {user?.role === "admin" && (
+              <TabPanel id="api">
+                <div className="space-y-4 mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>API Configuration</CardTitle>
+                      <CardDescription>Backend connection settings</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <label className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide">API Base URL</label>
+                        <input
+                          type="text"
+                          value={apiUrl}
+                          onChange={(e) => setApiUrl(e.target.value)}
+                          className="mt-1 w-full h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${connectionStatus === "success" ? "bg-[var(--color-success-500)]" : connectionStatus === "error" ? "bg-[var(--color-danger-500)]" : "bg-gray-400"}`} />
+                        <span className="text-sm text-[var(--color-muted)]">
+                          {statusMessage || (localStorage.getItem("ha_api_url") ? "Backend configured and saved" : "Default environment API active")}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        {API_ENDPOINTS.map((ep) => (
+                          <div key={ep.path} className="rounded-xl bg-[var(--color-border-subtle)] p-3">
+                            <p className="text-xs font-mono font-semibold text-[var(--color-foreground)]">{ep.method} {ep.path}</p>
+                            <p className="text-[10px] text-[var(--color-muted)] mt-0.5">{ep.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleTestConnection} disabled={testing}>
+                          {testing ? "Testing..." : "Test & Save Connection"}
                         </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabPanel>
+                        {localStorage.getItem("ha_api_url") && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              localStorage.removeItem("ha_api_url");
+                              window.location.reload();
+                            }}
+                          >
+                            Reset to Default
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabPanel>
+            )}
           </TabPanels>
         </Tabs>
       </motion.div>
