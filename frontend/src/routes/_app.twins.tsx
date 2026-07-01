@@ -265,9 +265,9 @@ function DigitalTwinsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {[
-                  { label: "Steps Logged", value: `${latest.actual_steps?.toLocaleString()} steps`, dev: latest.sleep_deviation !== undefined ? latest.actual_steps - latest.expected_steps : 0 },
-                  { label: "Sleep Logged", value: `${latest.actual_sleep_hours} hours`, dev: latest.sleep_deviation !== undefined ? latest.actual_sleep_hours - latest.expected_sleep_hours : 0 },
-                  { label: "Water Intake", value: `${latest.water_intake} ml`, dev: latest.water_intake - latest.water_intake_goal },
+                  { label: "Steps Logged", value: `${(latest.actual_steps ?? 0).toLocaleString()} steps`, dev: latest.sleep_deviation !== undefined ? (latest.actual_steps ?? 0) - (latest.expected_steps ?? 0) : 0 },
+                  { label: "Sleep Logged", value: `${latest.actual_sleep_hours ?? 0} hours`, dev: latest.sleep_deviation !== undefined ? (latest.actual_sleep_hours ?? 0) - (latest.expected_sleep_hours ?? 0) : 0 },
+                  { label: "Water Intake", value: `${latest.water_intake ?? 0} ml`, dev: (latest.water_intake ?? 0) - (latest.water_intake_goal ?? 0) },
                   { label: "Blood Pressure", value: `${latest.systolic_bp}/${latest.diastolic_bp} mmHg` },
                   { label: "Heart Rate", value: `${latest.heart_rate} bpm` },
                   { label: "Blood Oxygen (SpO₂)", value: `${latest.spo2}%` },
@@ -322,12 +322,12 @@ function DigitalTwinsPage() {
                 {[
                   { label: "Medication Deviation", value: latest.medication_deviation === 0 ? "Adherent" : "Missed Dose", isErr: latest.medication_deviation !== 0 },
                   { label: "Exercise Deviation", value: latest.exercise_completed === "Yes" ? "Adherent" : "Missed Session", isErr: latest.exercise_completed === "No" },
-                  { label: "Steps Deviation", value: `${Math.round(latest.sleep_deviation !== undefined ? Math.abs(latest.actual_steps - latest.expected_steps) : 0).toLocaleString()} steps` },
+                  { label: "Steps Deviation", value: `${Math.round(latest.sleep_deviation !== undefined ? Math.abs((latest.actual_steps ?? 0) - (latest.expected_steps ?? 0)) : 0).toLocaleString()} steps` },
                   { label: "Sleep Deviation", value: `${latest.sleep_deviation?.toFixed(1) ?? "0.0"} hours` },
-                  { label: "Water Deviation", value: `${Math.abs(latest.water_intake - latest.water_intake_goal)} ml` },
+                  { label: "Water Deviation", value: `${Math.abs((latest.water_intake ?? 0) - (latest.water_intake_goal ?? 0))} ml` },
                   { label: "Heart Rate Deviation", value: `${latest.heart_rate_deviation?.toFixed(1) ?? "0.0"} bpm` },
-                  { label: "BP Deviation (Systolic)", value: `${Math.abs(latest.systolic_bp - 105)} mmHg` },
-                  { label: "BP Deviation (Diastolic)", value: `${Math.abs(latest.diastolic_bp - 70)} mmHg` },
+                  { label: "BP Deviation (Systolic)", value: `${Math.abs((latest.systolic_bp ?? 105) - 105)} mmHg` },
+                  { label: "BP Deviation (Diastolic)", value: `${Math.abs((latest.diastolic_bp ?? 70) - 70)} mmHg` },
                   { label: "SpO₂ Deviation", value: `${latest.spo2_deviation?.toFixed(1) ?? "0.0"} %` },
                   { label: "Weight Deviation", value: `${latest.weight_deviation?.toFixed(1) ?? "0.0"} kg` },
                 ].map(item => (
@@ -379,7 +379,7 @@ function DigitalTwinsPage() {
                     {Math.round((latest.readmission_probability ?? 0) * 100)}%
                   </p>
                   <div className="mt-2 flex justify-center">
-                    <RiskBadge level={selectedPatient.Risk_Level as RiskLevel} />
+                    <RiskBadge level={(selectedPatient?.Risk_Level ?? "Low") as RiskLevel} />
                   </div>
                 </div>
 
