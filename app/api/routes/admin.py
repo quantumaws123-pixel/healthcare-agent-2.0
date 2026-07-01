@@ -38,7 +38,8 @@ class AdminUserOut(BaseModel):
 
 
 class DoctorOut(BaseModel):
-    id: str
+    id: str                           # UserDB.id (user id)
+    doctor_profile_id: Optional[str] = None   # DoctorProfileDB.id — used for assignment
     email: str
     name: Optional[str]
     status: str
@@ -180,6 +181,7 @@ async def list_pending_doctors(
         
         doctor_list.append({
             "id": doc.id,
+            "doctor_profile_id": profile.id if profile else None,
             "email": doc.email,
             "name": doc.name,
             "status": doc.status,
@@ -214,6 +216,7 @@ async def list_all_doctors(
         
         doctor_list.append({
             "id": doc.id,
+            "doctor_profile_id": profile.id if profile else None,
             "email": doc.email,
             "name": doc.name,
             "status": doc.status,
@@ -300,14 +303,15 @@ async def activate_doctor(
     db: AsyncSession = Depends(get_db_session),
     admin: UserDB = Depends(require_admin)
 ):
-    """Activate a doctor account."""
+    """Activate a doctor account (must be approved status)."""
     user = (await db.execute(select(UserDB).where(UserDB.id == user_id))).scalar_one_or_none()
     if not user or user.role != UserRole.doctor:
         raise HTTPException(404, "Doctor not found")
     
-    if user.status != "approved":
-        raise HTTPException(400, "Doctor must be approved before activation")
+    if user.status not in ("approved", "rejected"):
+        raise HTTPException(400, "Only approved or rejected doctors can be activated/reactivated")
     
+    user.status = "approved"
     user.is_active = True
     await db.commit()
     logger.info("Admin %s activated doctor %s", admin.email, user.email)
@@ -329,3 +333,49 @@ async def delete_doctor(
     await db.commit()
     logger.info("Admin %s deleted doctor %s", admin.email, user.email)
     return {"message": "Doctor deleted", "user_id": user_id}
+
+
+# ── Patient list for admin assignment ────────────────────────────────────
+
+class PatientListOut(BaseModel):
+    user_id: str
+    name: Optional[str] = None
+    email: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    disease_type: Optional[str] = None
+    assigned_doctor_id: Optional[str] = None
+    onboarding_completed: bool = False
+    model_config = {"from_attributes": True}
+
+
+@router.get("/patients", response_model=List[PatientListOut])
+async def list_all_patients(
+    db: AsyncSession = Depends(get_db_session),
+    admin: UserDB = Depends(require_admin),
+):
+    """List all patients with their profile info. Admin only."""
+    from app.database.models import PatientProfileDB
+
+    result = await db.execute(
+        select(UserDB).where(UserDB.role == UserRole.patient).order_by(UserDB.created_at.desc())
+    )
+    users = result.scalars().all()
+
+    out = []
+    for u in users:
+        profile = (await db.execute(
+            select(PatientProfileDB).where(PatientProfileDB.user_id == u.id)
+        )).scalar_one_or_none()
+
+        out.append(PatientListOut(
+            user_id=u.id,
+            name=u.name,
+            email=u.email,
+            age=profile.age if profile else None,
+            gender=profile.gender if profile else None,
+            disease_type=profile.disease_type if profile else None,
+            assigned_doctor_id=profile.assigned_doctor_id if profile else None,
+            onboarding_completed=profile.onboarding_completed if profile else False,
+        ))
+    return out

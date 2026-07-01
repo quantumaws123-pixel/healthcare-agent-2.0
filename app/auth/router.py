@@ -67,6 +67,10 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
     # Normalize role to a plain string
     role_str = body.role if isinstance(body.role, str) else str(body.role)
     
+    # Security: public registration must NEVER allow admin role
+    if role_str == "admin":
+        raise HTTPException(status_code=403, detail="Admin registration is not allowed via public signup")
+    
     # Doctors start as pending, others are approved immediately
     status = "pending" if role_str == "doctor" else "approved"
     is_active = status == "approved"  # Only approved users can login
@@ -92,16 +96,28 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db_sess
         )
         db.add(doctor_profile)
     elif role_str == "patient":
-        from app.database.models import PatientProfileDB
-        patient_profile = PatientProfileDB(
-            id=str(uuid.uuid4()),
-            user_id=user.id,
-        )
-        db.add(patient_profile)
+        from app.database.models import PatientProfileDB, PatientRecordDB
+        # Check there isn't already a profile (safety guard against double-flush)
+        existing_profile = (await db.execute(
+            select(PatientProfileDB).where(PatientProfileDB.user_id == user.id)
+        )).scalar_one_or_none()
+        if not existing_profile:
+            patient_profile = PatientProfileDB(
+                id=str(uuid.uuid4()),
+                user_id=user.id,
+                patient_id=user.id,
+                onboarding_completed=False,
+            )
+            db.add(patient_profile)
         
-        # Initialize 30 days of time-series clinical records for the patient
-        from app.auth.patient_setup import ensure_patient_records
-        await ensure_patient_records(user.id, user.email, user.name, db)
+        # Seed 30 days of generic monitoring records (only if none exist yet)
+        has_records = (await db.execute(
+            select(PatientRecordDB).where(PatientRecordDB.patient_id == user.id).limit(1)
+        )).scalar_one_or_none() is not None
+        
+        if not has_records:
+            from app.auth.patient_setup import _seed_patient_records
+            await _seed_patient_records(user.id, user.email, user.name, db)
     
     await db.refresh(user)
     await db.commit()
@@ -133,12 +149,13 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db_session)):
     user = (await db.execute(select(UserDB).where(UserDB.email == body.email))).scalar_one_or_none()
     if not user or not user.hashed_password or not verify_password(body.password, user.hashed_password):
         raise HTTPException(401, "Invalid email or password")
-    if not user.is_active:
-        raise HTTPException(403, "Account disabled")
+    # Check status BEFORE is_active so messages are accurate
     if user.status == "pending":
-        raise HTTPException(403, "Your account is pending admin approval")
+        raise HTTPException(403, "Your account is pending administrator approval")
     if user.status == "rejected":
-        raise HTTPException(403, "Your account application was rejected")
+        raise HTTPException(403, "Your registration request has been rejected")
+    if not user.is_active:
+        raise HTTPException(403, "Your account has been deactivated. Please contact your administrator.")
         
     # Automatically verify and initialize patient records if missing
     role_str = _get_role_str(user)
@@ -275,15 +292,6 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db_session))
         if role_str == "patient":
             from app.auth.patient_setup import ensure_patient_records
             await ensure_patient_records(user.id, user.email, user.name, db)
-            
-            # Update all existing patient records with their Google name
-            from app.database.models import PatientRecordDB
-            from sqlalchemy import update
-            await db.execute(
-                update(PatientRecordDB)
-                .where(PatientRecordDB.patient_id == user.id)
-                .values(patient_name=user.name)
-            )
 
         await db.commit()
 

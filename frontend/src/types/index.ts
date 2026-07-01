@@ -77,6 +77,20 @@ export interface PatientRecord {
   risk_level?: RiskLevel;
   recovery_status?: RecoveryStatus;
   doctor_recommendation?: string;
+  
+  weight_kg?: number;
+  expected_weight?: number;
+  medication_deviation?: number;
+  sleep_deviation?: number;
+  exercise_deviation?: number;
+  water_deviation?: number;
+  heart_rate_deviation?: number;
+  bp_deviation?: number;
+  weight_deviation?: number;
+  spo2_deviation?: number;
+  temp_deviation?: number;
+  ai_recommendations?: string[];
+  shap_reasons?: string[];
 }
 
 /* ── Summarised patient (latest day) ──────────────────────────────────── */
@@ -105,6 +119,36 @@ export interface DailyTrend {
   readmission_probability: number;
   real_health_score: number;
   ideal_health_score: number;
+  
+  // New Digital Twin and Deviation fields
+  weight_kg?: number;
+  expected_weight?: number;
+  medication_deviation?: number;
+  sleep_deviation?: number;
+  exercise_deviation?: number;
+  water_deviation?: number;
+  heart_rate_deviation?: number;
+  bp_deviation?: number;
+  weight_deviation?: number;
+  spo2_deviation?: number;
+  temp_deviation?: number;
+  
+  medication_taken?: string;
+  exercise_completed?: string;
+  actual_steps?: number;
+  actual_sleep_hours?: number;
+  water_intake?: number;
+  expected_steps?: number;
+  expected_sleep_hours?: number;
+  water_intake_goal?: number;
+  heart_rate?: number;
+  systolic_bp?: number;
+  diastolic_bp?: number;
+  spo2?: number;
+  body_temperature?: number;
+  
+  ai_recommendations?: string[];
+  shap_reasons?: string[];
 }
 
 export interface PatientSummaryResponse {
@@ -125,6 +169,8 @@ export interface PredictionResponse {
   Readmission_Probability: number;
   shap_features?: ShapFeature[];
   explainability: "available" | "unavailable";
+  AI_Recommendations?: string[];
+  Shap_Reasons?: string[];
 }
 
 export interface ShapFeature {

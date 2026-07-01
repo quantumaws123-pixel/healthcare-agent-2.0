@@ -7,6 +7,13 @@ import { AuthProvider } from "@/context/AuthContext";
 import { getStoredUser, getAccessToken } from "@/lib/auth";
 import "./styles/globals.css";
 
+// ── Persist dark mode preference across reloads ──────────────────────────
+const savedTheme = localStorage.getItem("ha_theme");
+if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+  document.documentElement.classList.add("dark");
+}
+// ────────────────────────────────────────────────────────────────────────
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

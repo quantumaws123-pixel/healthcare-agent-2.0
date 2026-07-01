@@ -1,13 +1,15 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { getStoredUser } from "@/lib/auth";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  ChevronLeft, Activity, Heart, Brain, TrendingUp,
+  ChevronLeft, Activity, Heart, Brain, TrendingUp, ClipboardList, FileText, Stethoscope,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, AreaChart, Area, Legend,
 } from "recharts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +22,10 @@ import { FloatingPanel } from "@/components/ui/FloatingPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonCard, SkeletonKPICard } from "@/components/ui/Skeleton";
 import { usePatientSummary } from "@/hooks/usePatients";
+import {
+  getMedicalHistory, getCarePlan, hospitalQueryKeys,
+} from "@/lib/api";
+import { CarePlanEditor } from "@/components/doctor/CarePlanEditor";
 import type { RiskLevel, RecoveryStatus, HealthTrend } from "@/types";
 
 export const Route = createFileRoute("/_app/patients/$patientId")({
@@ -43,7 +49,21 @@ function getRecommendation(prob: number, trend: string): string {
 
 function PatientDetailPage() {
   const { patientId } = Route.useParams();
+  const queryClient = useQueryClient();
   const { data: summaryData, isLoading, error } = usePatientSummary(patientId);
+  const [carePlanOpen, setCarePlanOpen] = useState(false);
+
+  const { data: medicalHistory } = useQuery({
+    queryKey: hospitalQueryKeys.medicalHistory(patientId),
+    queryFn: () => getMedicalHistory(patientId),
+    enabled: Boolean(patientId),
+  });
+
+  const { data: carePlan } = useQuery({
+    queryKey: hospitalQueryKeys.carePlan(patientId),
+    queryFn: () => getCarePlan(patientId),
+    enabled: Boolean(patientId),
+  });
 
   if (isLoading) {
     return (
@@ -124,7 +144,7 @@ function PatientDetailPage() {
             <Avatar name={patientId} size="lg" />
             <div>
               <h1 className="text-xl font-bold text-[var(--color-foreground)] tracking-tight truncate">
-                {patientId}
+                {summaryData.patient_name || patientId}
               </h1>
               <p className="text-sm text-[var(--color-muted)]">
                 {summaryData.disease_type} · {trends.length} days monitored
@@ -135,6 +155,14 @@ function PatientDetailPage() {
             <TrendBadge trend={latest.health_trend as HealthTrend} />
           </div>
         </div>
+        <Button
+          size="sm"
+          variant="secondary"
+          leftIcon={<ClipboardList size={14} />}
+          onClick={() => setCarePlanOpen(true)}
+        >
+          {carePlan ? "Update Care Plan" : "Create Care Plan"}
+        </Button>
       </motion.div>
 
       {/* KPI strip — real values from latest day */}
@@ -176,6 +204,8 @@ function PatientDetailPage() {
             <TabTrigger id="trends"     icon={<Activity size={14} />}>Trends</TabTrigger>
             <TabTrigger id="compliance" icon={<TrendingUp size={14} />}>Compliance</TabTrigger>
             <TabTrigger id="twin"       icon={<Brain size={14} />}>Digital Twin</TabTrigger>
+            <TabTrigger id="careplan"   icon={<ClipboardList size={14} />}>Care Plan</TabTrigger>
+            <TabTrigger id="history"    icon={<FileText size={14} />}>Medical History</TabTrigger>
           </TabList>
           <TabPanels>
 
@@ -368,9 +398,174 @@ function PatientDetailPage() {
               </div>
             </TabPanel>
 
+            {/* ── Care Plan ── */}
+            <TabPanel id="careplan">
+              <div className="mt-4 space-y-4">
+                {carePlan ? (
+                  <>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Active Care Plan</CardTitle>
+                        <CardDescription>Ideal Digital Twin targets set by the treating doctor</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-4 mb-5">
+                          <div className="text-center p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                              {carePlan.daily_steps_goal?.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Steps / day</p>
+                          </div>
+                          <div className="text-center p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20">
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                              {carePlan.sleep_hours_goal}h
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Sleep goal</p>
+                          </div>
+                          <div className="text-center p-3 rounded-xl bg-cyan-50 dark:bg-cyan-900/20">
+                            <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">
+                              {carePlan.water_intake_goal_ml}ml
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Water intake</p>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          {carePlan.medication_schedule && (
+                            <InfoRow label="💊 Medication Schedule" value={carePlan.medication_schedule} />
+                          )}
+                          {carePlan.exercise_plan && (
+                            <InfoRow label="🏃 Exercise Plan" value={carePlan.exercise_plan} />
+                          )}
+                          {carePlan.diet_plan && (
+                            <InfoRow label="🥗 Diet Plan" value={carePlan.diet_plan} />
+                          )}
+                          {carePlan.notes && (
+                            <InfoRow label="📋 Doctor Notes" value={carePlan.notes} />
+                          )}
+                        </div>
+                        <div className="flex gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500">
+                          <span>Follow-up every {carePlan.followup_frequency_days} days</span>
+                          <span>·</span>
+                          <span>Monitoring {carePlan.monitoring_duration_days} days</span>
+                          <span>·</span>
+                          <span>Alert at &gt;{Math.round((carePlan.risk_threshold ?? 0.5) * 100)}% risk</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={<ClipboardList size={14} />}
+                      onClick={() => setCarePlanOpen(true)}
+                    >
+                      Update Care Plan
+                    </Button>
+                  </>
+                ) : (
+                  <EmptyState
+                    title="No Care Plan Yet"
+                    description="Create a care plan to set this patient's Ideal Digital Twin targets."
+                    size="sm"
+                    className="py-8"
+                    action={{ label: "Create Care Plan", onClick: () => setCarePlanOpen(true) }}
+                  />
+                )}
+              </div>
+            </TabPanel>
+
+            {/* ── Medical History ── */}
+            <TabPanel id="history">
+              <div className="mt-4 space-y-4">
+                {medicalHistory ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Medical History</CardTitle>
+                      <CardDescription>Clinical record maintained by the treating doctor</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {medicalHistory.past_diseases && (
+                        <Section label="Past Diseases" value={medicalHistory.past_diseases} />
+                      )}
+                      {medicalHistory.previous_admissions && (
+                        <Section label="Previous Admissions" value={medicalHistory.previous_admissions} />
+                      )}
+                      {medicalHistory.previous_surgeries && (
+                        <Section label="Previous Surgeries" value={medicalHistory.previous_surgeries} />
+                      )}
+                      {medicalHistory.family_history && (
+                        <Section label="Family History" value={medicalHistory.family_history} />
+                      )}
+                      {medicalHistory.current_medications && (
+                        <Section label="Current Medications" value={medicalHistory.current_medications} />
+                      )}
+                      {medicalHistory.allergies && (
+                        <Section label="Allergies" value={medicalHistory.allergies} />
+                      )}
+                      {(medicalHistory.lifestyle_smoking || medicalHistory.lifestyle_alcohol || medicalHistory.lifestyle_exercise) && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Lifestyle</p>
+                          <div className="flex flex-wrap gap-2">
+                            {medicalHistory.lifestyle_smoking && (
+                              <span className="px-2.5 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                Smoking: {medicalHistory.lifestyle_smoking}
+                              </span>
+                            )}
+                            {medicalHistory.lifestyle_alcohol && (
+                              <span className="px-2.5 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                Alcohol: {medicalHistory.lifestyle_alcohol}
+                              </span>
+                            )}
+                            {medicalHistory.lifestyle_exercise && (
+                              <span className="px-2.5 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                Exercise: {medicalHistory.lifestyle_exercise}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {medicalHistory.doctor_notes && (
+                        <div className="p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800">
+                          <p className="text-xs font-semibold text-primary-700 dark:text-primary-400 mb-1">
+                            🩺 Doctor's Clinical Notes
+                          </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{medicalHistory.doctor_notes}</p>
+                        </div>
+                      )}
+                      {medicalHistory.discharge_summary && (
+                        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
+                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                            📄 Discharge Summary
+                          </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{medicalHistory.discharge_summary}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <EmptyState
+                    title="No Medical History"
+                    description="No clinical history has been recorded for this patient yet."
+                    size="sm"
+                    className="py-8"
+                  />
+                )}
+              </div>
+            </TabPanel>
+
           </TabPanels>
         </Tabs>
       </motion.div>
+
+      {/* Care Plan Editor modal */}
+      <CarePlanEditor
+        open={carePlanOpen}
+        onClose={() => setCarePlanOpen(false)}
+        patientUserId={patientId}
+        patientName={summaryData.patient_name || patientId}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: hospitalQueryKeys.carePlan(patientId) });
+        }}
+      />
     </motion.div>
   );
 }
@@ -394,5 +589,23 @@ function StatCard({ icon, label, value, color }: {
         <p className="text-xs text-[var(--color-muted)] mt-0.5">{label}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-0.5">{label}</p>
+      <p className="text-sm text-gray-900 dark:text-white">{value}</p>
+    </div>
+  );
+}
+
+function Section({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{value}</p>
+    </div>
   );
 }

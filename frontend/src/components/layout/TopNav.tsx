@@ -1,21 +1,55 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Bell, Sun, Moon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Avatar } from "@/components/ui/Avatar";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { useAuthContext } from "@/context/AuthContext";
+import { getDashboardStats, queryKeys } from "@/lib/api";
 
 interface TopNavProps { onMenuClick: () => void; }
 
 export function TopNav({ onMenuClick }: TopNavProps) {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark")
+  );
   const [notifOpen, setNotifOpen] = useState(false);
   const { user } = useAuthContext();
 
   const toggleDark = () => {
-    setIsDark(v => !v);
-    document.documentElement.classList.toggle("dark");
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("ha_theme", next ? "dark" : "light");
   };
+
+  // Live dashboard stats for real notifications
+  const { data: stats } = useQuery({
+    queryKey: queryKeys.dashboardStats(),
+    queryFn: getDashboardStats,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const highRisk      = stats ? (stats.risk_distribution?.high ?? 0) + (stats.risk_distribution?.critical ?? 0) : 0;
+  const criticalCount = stats?.risk_distribution?.critical ?? 0;
+  const avgCompliance = stats ? Math.round(stats.avg_compliance) : null;
+
+  const notifications = [
+    ...(criticalCount > 0 ? [{
+      title: `${criticalCount} patient${criticalCount > 1 ? "s" : ""} at Critical risk — immediate review required`,
+      time: "Live", urgent: true,
+    }] : []),
+    ...(highRisk > 0 ? [{
+      title: `${highRisk} high-risk patient${highRisk > 1 ? "s" : ""} require monitoring`,
+      time: "Live", urgent: highRisk > 3,
+    }] : []),
+    ...(avgCompliance !== null && avgCompliance < 70 ? [{
+      title: `System-wide compliance at ${avgCompliance}% — below 70% target`,
+      time: "Live", urgent: false,
+    }] : []),
+  ];
+
+  const hasNotifs = notifications.length > 0;
 
   return (
     <header className="sticky top-0 z-[1100] h-16 shrink-0 flex items-center gap-4 px-4 sm:px-6 bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
@@ -41,11 +75,13 @@ export function TopNav({ onMenuClick }: TopNavProps) {
         </motion.div>
       </button>
 
-      {/* Notifications */}
+      {/* Live Notifications */}
       <div className="relative">
-        <button onClick={() => setNotifOpen(v => !v)} className="flex items-center justify-center w-9 h-9 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <button onClick={() => setNotifOpen(v => !v)} className="relative flex items-center justify-center w-9 h-9 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
           <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger-500 border-2 border-white dark:border-gray-900" />
+          {hasNotifs && (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger-500 border-2 border-white dark:border-gray-900" />
+          )}
         </button>
         <AnimatePresence>
           {notifOpen && (
@@ -56,16 +92,27 @@ export function TopNav({ onMenuClick }: TopNavProps) {
                 exit={{ opacity: 0, y: 4, scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className="absolute right-0 top-full mt-2 z-[1001] w-80 rounded-2xl p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-float">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Notifications</p>
-                {NOTIFS.map((n, i) => (
-                  <div key={i} className="flex gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                    <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${n.urgent ? "bg-danger-500" : "bg-primary-500"}`} />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{n.time}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">System Alerts</p>
+                  {hasNotifs && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-danger-500 text-white rounded-full">
+                      {notifications.length}
+                    </span>
+                  )}
+                </div>
+                {notifications.length === 0 ? (
+                  <p className="text-sm text-gray-500 py-4 text-center">No active alerts</p>
+                ) : (
+                  notifications.map((n, i) => (
+                    <div key={i} className="flex gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                      <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.urgent ? "bg-danger-500" : "bg-primary-500"}`} />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{n.time}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </motion.div>
             </>
           )}
@@ -81,9 +128,3 @@ export function TopNav({ onMenuClick }: TopNavProps) {
     </header>
   );
 }
-
-const NOTIFS = [
-  { title: "Patient HDT-SGH risk level elevated to High", time: "2 minutes ago", urgent: true },
-  { title: "3 patients missed medication today",          time: "15 minutes ago", urgent: false },
-  { title: "Weekly compliance report ready",             time: "1 hour ago",     urgent: false },
-];

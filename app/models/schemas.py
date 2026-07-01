@@ -62,6 +62,23 @@ class PatientRecord(BaseModel):
     
     day: Optional[int] = Field(None, description="Day number in monitoring period")
     
+    # Digital Twin and Deviation fields
+    weight_kg: Optional[float] = Field(None, description="Actual weight in kg")
+    expected_weight: Optional[float] = Field(None, description="Expected weight in kg")
+    medication_deviation: Optional[float] = Field(None, description="Medication deviation")
+    sleep_deviation: Optional[float] = Field(None, description="Sleep deviation")
+    exercise_deviation: Optional[float] = Field(None, description="Exercise deviation")
+    water_deviation: Optional[float] = Field(None, description="Water deviation")
+    heart_rate_deviation: Optional[float] = Field(None, description="Heart rate deviation")
+    bp_deviation: Optional[float] = Field(None, description="BP deviation")
+    weight_deviation: Optional[float] = Field(None, description="Weight deviation")
+    spo2_deviation: Optional[float] = Field(None, description="SpO2 deviation")
+    temp_deviation: Optional[float] = Field(None, description="Temperature deviation")
+    
+    # AI Explainability and recommendation fields
+    ai_recommendations: Optional[list[str]] = Field(None, description="AI-generated personalized recommendations")
+    shap_reasons: Optional[list[str]] = Field(None, description="SHAP feature attribution explanations")
+    
     @field_validator('diastolic_bp')
     @classmethod
     def validate_blood_pressure(cls, v: int, info) -> int:

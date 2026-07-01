@@ -14,5 +14,39 @@ services:
         value: postgres
       - key: DATABASE_USER
         sync: false
+      - key: DATABASE_PORT
+        value: "5432"
       - key: LOG_LEVEL
         value: INFO
+      - key: LOG_FORMAT
+        value: json
+      # JWT — set this to a long random string in Render dashboard
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_EXPIRE_MINUTES
+        value: "60"
+      - key: JWT_REFRESH_EXPIRE_DAYS
+        value: "30"
+      # Google OAuth — set in Render dashboard
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # URLs — update if your Render service URL changes
+      - key: FRONTEND_URL
+        value: https://healthcare-agent-2-0-xi.vercel.app
+      - key: BACKEND_URL
+        value: https://healthcare-agent-backend-3hju.onrender.com
+      - key: CORS_ORIGINS
+        value: https://healthcare-agent-2-0-xi.vercel.app,http://localhost:3000,http://localhost:5173
+      # Cache / ML
+      - key: CACHE_ENABLED
+        value: "true"
+      - key: CACHE_TTL_SECONDS
+        value: "300"
+      - key: MODEL_VERSION
+        value: latest
+      - key: MODEL_PATH
+        value: ./models

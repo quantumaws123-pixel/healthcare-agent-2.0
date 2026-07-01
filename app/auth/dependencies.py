@@ -26,8 +26,15 @@ async def get_current_user(
     result = await db.execute(select(UserDB).where(UserDB.id == user_id))
     user = result.scalar_one_or_none()
 
-    if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    if not user.is_active:
+        if user.status == "pending":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is pending administrator approval")
+        if user.status == "rejected":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your registration request has been rejected")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account has been deactivated. Please contact your administrator.")
 
     return user
 

@@ -236,12 +236,12 @@ class SHAPExplainer:
             ) from exc
 
         if self._background is None:
-            # Fallback: single-sample zero background to allow instantiation
+            n_features = len(self.feature_names) if self.feature_names else 1
             logger.warning(
                 "No background dataset set; using zero-filled placeholder "
-                "for SHAP KernelExplainer.  Call set_background() for accuracy."
+                "with %d features for SHAP KernelExplainer.  Call set_background() for accuracy.",
+                n_features,
             )
-            n_features = 1
             self._background = np.zeros((1, n_features))
 
         # Choose prediction function based on model type

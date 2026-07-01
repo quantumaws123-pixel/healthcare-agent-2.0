@@ -34,6 +34,7 @@ from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.model import router as model_router
 from app.api.routes.admin import router as admin_router
 from app.auth.router import router as auth_router
+from app.api.routes.hospital import router as hospital_router
 from app.cache.redis_cache import get_cache
 from app.database.connection import check_db_health, close_db
 from app.database.connection_manager import init_db_with_retry
@@ -122,6 +123,7 @@ register_exception_handlers(app)
 
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(hospital_router)
 app.include_router(patients_router)
 app.include_router(predict_router)
 app.include_router(dashboard_router)

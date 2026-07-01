@@ -23,6 +23,7 @@ import { Route as AppAnalyticsImport } from './routes/_app.analytics'
 import { Route as AppAlertsImport } from './routes/_app.alerts'
 import { Route as AppPatientsPatientIdImport } from './routes/_app.patients.$patientId'
 import { Route as AppAdminDoctorsImport } from './routes/_app.admin.doctors'
+import { Route as AppAdminAssignImport } from './routes/_app.admin.assign'
 import { Route as AppAdminAdminsImport } from './routes/_app.admin.admins'
 
 // Create/Update Routes
@@ -95,6 +96,12 @@ const AppPatientsPatientIdRoute = AppPatientsPatientIdImport.update({
 const AppAdminDoctorsRoute = AppAdminDoctorsImport.update({
   id: '/admin/doctors',
   path: '/admin/doctors',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppAdminAssignRoute = AppAdminAssignImport.update({
+  id: '/admin/assign',
+  path: '/admin/assign',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -185,6 +192,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminAdminsImport
       parentRoute: typeof AppImport
     }
+    '/_app/admin/assign': {
+      id: '/_app/admin/assign'
+      path: '/admin/assign'
+      fullPath: '/admin/assign'
+      preLoaderRoute: typeof AppAdminAssignImport
+      parentRoute: typeof AppImport
+    }
     '/_app/admin/doctors': {
       id: '/_app/admin/doctors'
       path: '/admin/doctors'
@@ -225,6 +239,7 @@ interface AppRouteChildren {
   AppTwinsRoute: typeof AppTwinsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAdminAdminsRoute: typeof AppAdminAdminsRoute
+  AppAdminAssignRoute: typeof AppAdminAssignRoute
   AppAdminDoctorsRoute: typeof AppAdminDoctorsRoute
 }
 
@@ -237,6 +252,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppTwinsRoute: AppTwinsRoute,
   AppIndexRoute: AppIndexRoute,
   AppAdminAdminsRoute: AppAdminAdminsRoute,
+  AppAdminAssignRoute: AppAdminAssignRoute,
   AppAdminDoctorsRoute: AppAdminDoctorsRoute,
 }
 
@@ -254,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
   '/admin/admins': typeof AppAdminAdminsRoute
+  '/admin/assign': typeof AppAdminAssignRoute
   '/admin/doctors': typeof AppAdminDoctorsRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
@@ -269,6 +286,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
   '/admin/admins': typeof AppAdminAdminsRoute
+  '/admin/assign': typeof AppAdminAssignRoute
   '/admin/doctors': typeof AppAdminDoctorsRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
@@ -286,6 +304,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
   '/_app/admin/admins': typeof AppAdminAdminsRoute
+  '/_app/admin/assign': typeof AppAdminAssignRoute
   '/_app/admin/doctors': typeof AppAdminDoctorsRoute
   '/_app/patients/$patientId': typeof AppPatientsPatientIdRoute
 }
@@ -304,6 +323,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/'
     | '/admin/admins'
+    | '/admin/assign'
     | '/admin/doctors'
     | '/patients/$patientId'
   fileRoutesByTo: FileRoutesByTo
@@ -318,6 +338,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/'
     | '/admin/admins'
+    | '/admin/assign'
     | '/admin/doctors'
     | '/patients/$patientId'
   id:
@@ -333,6 +354,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_app/'
     | '/_app/admin/admins'
+    | '/_app/admin/assign'
     | '/_app/admin/doctors'
     | '/_app/patients/$patientId'
   fileRoutesById: FileRoutesById
@@ -376,6 +398,7 @@ export const routeTree = rootRoute
         "/_app/twins",
         "/_app/",
         "/_app/admin/admins",
+        "/_app/admin/assign",
         "/_app/admin/doctors"
       ]
     },
@@ -418,6 +441,10 @@ export const routeTree = rootRoute
     },
     "/_app/admin/admins": {
       "filePath": "_app.admin.admins.tsx",
+      "parent": "/_app"
+    },
+    "/_app/admin/assign": {
+      "filePath": "_app.admin.assign.tsx",
       "parent": "/_app"
     },
     "/_app/admin/doctors": {

@@ -11,13 +11,19 @@ import asyncio
 import logging
 from typing import Literal, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.database.connection import get_db_session
+from app.database.models import DoctorProfileDB, PatientProfileDB
 from app.models.schemas import PatientRecord
 from app.services.digital_twin_engine import DigitalTwinEngine
 from app.services.prediction_system import PredictionSystem
 from app.services.recommendation_engine import RecommendationEngine
+from app.auth.dependencies import get_current_user
+from app.auth.models import UserDB
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +61,8 @@ class FrontendPredictionResult(BaseModel):
     Readmission_Probability: float = Field(..., alias="Readmission_Probability", serialization_alias="Readmission_Probability")
     shap_features: Optional[list[ShapFeature]] = Field(default=None)
     explainability: Literal["available", "unavailable"] = Field(default="unavailable")
+    AI_Recommendations: Optional[list[str]] = Field(default=None, alias="AI_Recommendations", serialization_alias="AI_Recommendations")
+    Shap_Reasons: Optional[list[str]] = Field(default=None, alias="Shap_Reasons", serialization_alias="Shap_Reasons")
 
 
 # ---------------------------------------------------------------------------
@@ -78,22 +86,30 @@ class FrontendPredictionResult(BaseModel):
 async def predict(
     record: PatientRecord,
     request: Request,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: UserDB = Depends(get_current_user),
 ) -> FrontendPredictionResult:
+    """POST /predict — authentication required.
+
+    Patients can only predict for themselves.
+    Doctors can only predict for assigned patients.
+    Admins are unrestricted.
     """
-    POST /predict
-
-    Full prediction pipeline:
-
-    1. Compute deviation metrics (Digital Twin Engine).
-    2. Compute health scores — ideal, real, deviation, recovery.
-    3. Analyze health trend from historical records (empty list for single-record requests).
-    4. Classify recovery status.
-    5. Run ML inference to get readmission probability and SHAP explanation.
-    6. Generate clinical recommendation.
-    7. Return a fully populated PredictionResult.
-
-    **Validates: Requirements 1.3, 1.7, 4.1, 4.2, 4.3, 4.4**
-    """
+    role = current_user.role
+    role_str = role.value if hasattr(role, "value") else str(role)
+    if role_str == "patient" and current_user.id != record.patient_id:
+        raise HTTPException(status_code=403, detail="Patients can only predict for their own record")
+    if role_str == "doctor":
+        doc_profile = (await db.execute(
+            select(DoctorProfileDB).where(DoctorProfileDB.user_id == current_user.id)
+        )).scalar_one_or_none()
+        if not doc_profile:
+            raise HTTPException(status_code=403, detail="Doctor profile not found")
+        pat_profile = (await db.execute(
+            select(PatientProfileDB).where(PatientProfileDB.user_id == record.patient_id)
+        )).scalar_one_or_none()
+        if not pat_profile or pat_profile.assigned_doctor_id != doc_profile.id:
+            raise HTTPException(status_code=403, detail="You are not assigned to this patient")
     # ------------------------------------------------------------------
     # Step 1 – Instantiate service objects
     # ------------------------------------------------------------------
@@ -334,6 +350,19 @@ async def predict(
             shap_features = None
             explainability = "unavailable"
 
+    # Generate recommendations and explainable reasons
+    from app.services.deviation_engine import DeviationEngine
+    from app.services.enrichment import enrich_patient_record
+    pyd_record = record.model_copy(update={
+        "risk_level": risk_level,
+        "recovery_status": recovery_status,
+        "compliance_score": compliance_score,
+        "deviation_score": deviation_score,
+    })
+    await enrich_patient_record(pyd_record, db)
+    ai_recs = pyd_record.ai_recommendations
+    reasons = pyd_record.shap_reasons
+
     return FrontendPredictionResult.model_validate(
         {
             "Risk_Level": risk_level,
@@ -342,5 +371,7 @@ async def predict(
             "Readmission_Probability": round(readmission_probability, 4),
             "shap_features": shap_features,
             "explainability": explainability,
+            "AI_Recommendations": ai_recs,
+            "Shap_Reasons": reasons,
         }
     )

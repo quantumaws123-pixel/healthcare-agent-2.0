@@ -66,6 +66,14 @@ async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T>
       ...options.headers,
     },
   });
+
+  // 202 Accepted = doctor pending approval — not an error, but not a token either
+  if (res.status === 202) {
+    const body = await res.json().catch(() => ({}));
+    const err = { status: 202, message: body.detail ?? "Account pending admin approval." };
+    throw err;
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw { status: res.status, message: body.detail ?? body.message ?? `HTTP ${res.status}` };

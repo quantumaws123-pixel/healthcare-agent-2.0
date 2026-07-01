@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, LayoutDashboard, Users, AlertTriangle,
   FlaskConical, BarChart3, Settings, ChevronLeft, ChevronRight,
-  Heart, LogOut,
+  Heart, LogOut, UserCheck, Shield, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
@@ -16,12 +16,15 @@ interface SidebarProps { collapsed: boolean; onToggle: () => void; }
 interface NavItem { label: string; to: string; icon: React.ElementType; badge?: number; roles?: Role[]; }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard",     to: "/",          icon: LayoutDashboard },
-  { label: "Patients",      to: "/patients",  icon: Users,          roles: ["admin", "doctor"] },
-  { label: "Risk Alerts",   to: "/alerts",    icon: AlertTriangle,  badge: 3, roles: ["admin", "doctor"] },
-  { label: "Digital Twins", to: "/twins",     icon: Activity,       roles: ["admin", "doctor"] },
-  { label: "ML Models",     to: "/models",    icon: FlaskConical,   roles: ["admin"] },
-  { label: "Analytics",     to: "/analytics", icon: BarChart3,      roles: ["admin", "doctor"] },
+  { label: "Dashboard",      to: "/",               icon: LayoutDashboard },
+  { label: "Patients",       to: "/patients",       icon: Users,          roles: ["admin", "doctor"] },
+  { label: "Risk Alerts",    to: "/alerts",         icon: AlertTriangle,  roles: ["admin", "doctor"] },
+  { label: "Digital Twins",  to: "/twins",          icon: Activity,       roles: ["admin", "doctor"] },
+  { label: "Analytics",      to: "/analytics",      icon: BarChart3,      roles: ["admin", "doctor"] },
+  { label: "ML Models",      to: "/models",         icon: FlaskConical,   roles: ["admin"] },
+  { label: "Assign Doctors", to: "/admin/assign",   icon: ClipboardList,  roles: ["admin"] },
+  { label: "Doctors",        to: "/admin/doctors",  icon: UserCheck,      roles: ["admin"] },
+  { label: "Admins",         to: "/admin/admins",   icon: Shield,         roles: ["admin"] },
 ];
 
 const bottomItems: NavItem[] = [

@@ -25,7 +25,7 @@ interface DoctorUser {
   name: string | null;
   avatar_url: string | null;
   role: string;
-  status: "pending" | "approved" | "rejected" | "inactive";
+  status: "pending" | "approved" | "rejected";
   is_active: boolean;
   created_at: string;
 }
@@ -85,19 +85,20 @@ function AdminDoctorsPage() {
     }
   };
 
-  const getStatusBadge = (status: DoctorUser["status"]) => {
-    switch (status) {
-      case "approved":
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success-50 text-success-700 dark:bg-green-900/20 dark:text-green-300">Active</span>;
-      case "pending":
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-warning-50 text-warning-700 dark:bg-amber-900/20 dark:text-amber-300">Pending Approval</span>;
-      case "rejected":
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-danger-50 text-danger-700 dark:bg-red-900/20 dark:text-red-300">Rejected</span>;
-      case "inactive":
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Deactivated</span>;
-      default:
-        return null;
+  const getStatusBadge = (doc: DoctorUser) => {
+    if (doc.status === "pending") {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-warning-50 text-warning-700 dark:bg-amber-900/20 dark:text-amber-300">Pending Approval</span>;
     }
+    if (doc.status === "rejected") {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-danger-50 text-danger-700 dark:bg-red-900/20 dark:text-red-300">Rejected</span>;
+    }
+    if (doc.status === "approved" && !doc.is_active) {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Deactivated</span>;
+    }
+    if (doc.status === "approved" && doc.is_active) {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success-50 text-success-700 dark:bg-green-900/20 dark:text-green-300">Active</span>;
+    }
+    return null;
   };
 
   return (
@@ -158,7 +159,7 @@ function AdminDoctorsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-[var(--color-muted)]">{doc.email}</td>
-                    <td className="px-6 py-4">{getStatusBadge(doc.status)}</td>
+                    <td className="px-6 py-4">{getStatusBadge(doc)}</td>
                     <td className="px-6 py-4 text-sm text-[var(--color-muted)]">
                       {new Date(doc.created_at).toLocaleDateString()}
                     </td>
@@ -186,7 +187,7 @@ function AdminDoctorsPage() {
                             </Button>
                           </>
                         )}
-                        {doc.status === "approved" && (
+                        {doc.status === "approved" && doc.is_active && (
                           <Button
                             size="xs"
                             variant="secondary"
@@ -198,7 +199,7 @@ function AdminDoctorsPage() {
                             Deactivate
                           </Button>
                         )}
-                        {(doc.status === "inactive" || doc.status === "rejected") && (
+                        {(doc.status === "approved" && !doc.is_active) && (
                           <Button
                             size="xs"
                             variant="primary"
@@ -207,6 +208,17 @@ function AdminDoctorsPage() {
                             onClick={() => handleAction(doc.id, "activate")}
                           >
                             Activate
+                          </Button>
+                        )}
+                        {doc.status === "rejected" && (
+                          <Button
+                            size="xs"
+                            variant="secondary"
+                            leftIcon={<UserCheck size={12} />}
+                            loading={actionLoading === doc.id}
+                            onClick={() => handleAction(doc.id, "approve")}
+                          >
+                            Re-approve
                           </Button>
                         )}
                       </div>

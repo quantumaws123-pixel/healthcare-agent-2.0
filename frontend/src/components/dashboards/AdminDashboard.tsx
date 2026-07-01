@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, UserCheck, Clock, AlertTriangle, TrendingUp, Activity, Loader2 } from "lucide-react";
+import { Users, UserCheck, Clock, AlertTriangle, Activity, Loader2, ClipboardList, Shield } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { FloatingPanel } from "@/components/ui/FloatingPanel";
 import { StatCard } from "@/components/ui/StatCard";
@@ -130,40 +130,40 @@ export function AdminDashboard() {
       {/* Quick Actions */}
       <FloatingPanel>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            to="/admin/doctors"
-            className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50 transition-colors">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Link to="/admin/doctors" className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group cursor-pointer">
+            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
               <UserCheck size={20} className="text-primary-600 dark:text-primary-400" />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Approve Doctors</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{pendingRequests} pending approvals</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{pendingRequests} pending</p>
             </div>
           </Link>
-          <Link
-            to="/admin/admins"
-            className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50 transition-colors">
-              <Users size={20} className="text-primary-600 dark:text-primary-400" />
+          <Link to="/admin/assign" className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group cursor-pointer">
+            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center group-hover:bg-green-200 transition-colors">
+              <ClipboardList size={20} className="text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">Assign Doctors</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Match patients to doctors</p>
+            </div>
+          </Link>
+          <Link to="/admin/admins" className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group cursor-pointer">
+            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+              <Shield size={20} className="text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Manage Admins</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Create or manage admins</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Create or suspend admins</p>
             </div>
           </Link>
-          <Link
-            to="/models"
-            className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50 transition-colors">
+          <Link to="/models" className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group cursor-pointer">
+            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
               <Activity size={20} className="text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Manage ML Models</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">ML Models</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View model performance</p>
             </div>
           </Link>
