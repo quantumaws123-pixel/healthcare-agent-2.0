@@ -16,18 +16,44 @@ export const Route = createFileRoute("/_app/settings")({
 
 function SettingsPage() {
   const { user } = useAuthContext();
-  const [notifications, setNotifications] = useState({
-    highRisk: true,
-    medication: true,
-    weeklyReport: false,
-    criticalAlert: true,
-  });
 
-  const [thresholds, setThresholds] = useState({
-    readmissionAlert: 70,
-    complianceWarn: 60,
-    deviationAlert: 25,
+  type NotifState = { highRisk: boolean; medication: boolean; weeklyReport: boolean; criticalAlert: boolean };
+  const DEFAULT_NOTIFS: NotifState = { highRisk: true, medication: true, weeklyReport: false, criticalAlert: true };
+
+  type ThresholdState = { readmissionAlert: number; complianceWarn: number; deviationAlert: number };
+  const DEFAULT_THRESHOLDS: ThresholdState = { readmissionAlert: 70, complianceWarn: 60, deviationAlert: 25 };
+
+  // Load notifications from localStorage or defaults
+  const [notifications, setNotifications] = useState<NotifState>(() => {
+    try {
+      const saved = localStorage.getItem("ha_notifications");
+      if (saved) return JSON.parse(saved) as NotifState;
+    } catch {}
+    return DEFAULT_NOTIFS;
   });
+  const [notifSaved, setNotifSaved] = useState(false);
+
+  // Load thresholds from localStorage or defaults
+  const [thresholds, setThresholds] = useState<ThresholdState>(() => {
+    try {
+      const saved = localStorage.getItem("ha_thresholds");
+      if (saved) return JSON.parse(saved) as ThresholdState;
+    } catch {}
+    return DEFAULT_THRESHOLDS;
+  });
+  const [thresholdSaved, setThresholdSaved] = useState(false);
+
+  const handleSaveNotifications = () => {
+    localStorage.setItem("ha_notifications", JSON.stringify(notifications));
+    setNotifSaved(true);
+    setTimeout(() => setNotifSaved(false), 2500);
+  };
+
+  const handleSaveThresholds = () => {
+    localStorage.setItem("ha_thresholds", JSON.stringify(thresholds));
+    setThresholdSaved(true);
+    setTimeout(() => setThresholdSaved(false), 2500);
+  };
 
   const [apiUrl, setApiUrl] = useState(() => {
     return localStorage.getItem("ha_api_url") || (import.meta.env.VITE_API_URL ?? "http://localhost:8000");
@@ -135,16 +161,23 @@ function SettingsPage() {
                           <p className="text-xs text-[var(--color-muted)]">{NOTIF_DESCRIPTIONS[key]}</p>
                         </div>
                         <button
-                          onClick={() => setNotifications(n => ({ ...n, [key]: !val }))}
+                          onClick={() => setNotifications((n: NotifState) => ({ ...n, [key]: !val }))}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${val ? "bg-[var(--color-primary-500)]" : "bg-[var(--color-border)]"}`}
                           role="switch"
-                          aria-checked={val}
+                          aria-checked={val as boolean}
                         >
                           <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${val ? "translate-x-6" : "translate-x-1"}`} />
                         </button>
                       </div>
                     ))}
-                    <Button size="sm" className="mt-2">Save Preferences</Button>
+                    <div className="flex items-center gap-3 mt-3">
+                      <Button size="sm" onClick={handleSaveNotifications}>Save Preferences</Button>
+                      {notifSaved && (
+                        <span className="text-xs font-semibold text-[var(--color-success-600)] flex items-center gap-1">
+                          ✓ Preferences saved!
+                        </span>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -166,14 +199,14 @@ function SettingsPage() {
                             <label className="text-sm font-medium text-[var(--color-foreground)] capitalize">
                               {key.replace(/([A-Z])/g, " $1")}
                             </label>
-                            <Badge variant="primary" size="sm">{val}%</Badge>
+                            <Badge variant="primary" size="sm">{val as number}%</Badge>
                           </div>
                           <input
                             type="range"
                             min={0}
                             max={100}
-                            value={val}
-                            onChange={(e) => setThresholds(t => ({ ...t, [key]: +e.target.value }))}
+                            value={val as number}
+                            onChange={(e) => setThresholds((t: ThresholdState) => ({ ...t, [key]: +e.target.value }))}
                             className="w-full accent-[var(--color-primary-500)]"
                           />
                           <div className="flex justify-between mt-0.5">
@@ -182,7 +215,14 @@ function SettingsPage() {
                           </div>
                         </div>
                       ))}
-                      <Button size="sm">Save Thresholds</Button>
+                      <div className="flex items-center gap-3 mt-2">
+                        <Button size="sm" onClick={handleSaveThresholds}>Save Thresholds</Button>
+                        {thresholdSaved && (
+                          <span className="text-xs font-semibold text-[var(--color-success-600)] flex items-center gap-1">
+                            ✓ Thresholds saved!
+                          </span>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 </div>

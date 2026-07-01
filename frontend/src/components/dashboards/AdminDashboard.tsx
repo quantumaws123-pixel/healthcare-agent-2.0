@@ -93,30 +93,38 @@ export function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Patients"
-          value={String(totalPatients)}
-          icon={Users}
-          color="blue"
-        />
-        <StatCard
-          label="Total Doctors"
-          value={String(totalDoctors)}
-          icon={UserCheck}
-          color="green"
-        />
-        <StatCard
-          label="Pending Requests"
-          value={String(pendingRequests)}
-          icon={Clock}
-          color="amber"
-        />
-        <StatCard
-          label="High Risk Patients"
-          value={String(highRiskCount)}
-          icon={AlertTriangle}
-          color="red"
-        />
+        <Link to="/patients" className="block">
+          <StatCard
+            label="Total Patients"
+            value={String(totalPatients)}
+            icon={Users}
+            color="blue"
+          />
+        </Link>
+        <Link to="/admin/doctors" className="block">
+          <StatCard
+            label="Total Doctors"
+            value={String(totalDoctors)}
+            icon={UserCheck}
+            color="green"
+          />
+        </Link>
+        <Link to="/admin/doctors" className="block">
+          <StatCard
+            label="Pending Requests"
+            value={String(pendingRequests)}
+            icon={Clock}
+            color="amber"
+          />
+        </Link>
+        <Link to="/patients" className="block">
+          <StatCard
+            label="High Risk Patients"
+            value={String(highRiskCount)}
+            icon={AlertTriangle}
+            color="red"
+          />
+        </Link>
       </div>
 
       {/* Quick Actions */}

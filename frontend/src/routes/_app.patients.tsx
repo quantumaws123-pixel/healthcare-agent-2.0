@@ -181,7 +181,11 @@ function PatientRow({ patient: p }: { patient: PatientSummary }) {
   const readmissionPct = Math.round(p.Readmission_Probability * 100);
   const isHighRisk = readmissionPct > 70;
   return (
-    <div className={`grid grid-cols-[auto_1fr] sm:grid-cols-[2fr_1.5fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center px-5 py-3.5 border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-border-subtle)]/50 transition-colors ${isHighRisk ? "bg-[var(--color-danger-50)]/30" : ""}`}>
+    <Link
+      to="/patients/$patientId"
+      params={{ patientId: p.Patient_ID }}
+      className={`grid grid-cols-[auto_1fr] sm:grid-cols-[2fr_1.5fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center px-5 py-3.5 border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-border-subtle)]/50 transition-colors cursor-pointer ${isHighRisk ? "bg-[var(--color-danger-50)]/30" : ""}`}
+    >
       <div className="flex items-center gap-3 min-w-0">
         <Avatar name={p.Patient_ID} size="sm" />
         <div className="min-w-0">
@@ -215,11 +219,9 @@ function PatientRow({ patient: p }: { patient: PatientSummary }) {
           {readmissionPct}%
         </span>
       </div>
-      <Link to="/patients/$patientId" params={{ patientId: p.Patient_ID }}>
-        <Button variant="ghost" size="icon-sm" aria-label="View patient">
-          <ChevronRight size={14} />
-        </Button>
-      </Link>
-    </div>
+      <div className="flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-foreground)]">
+        <ChevronRight size={14} />
+      </div>
+    </Link>
   );
 }
