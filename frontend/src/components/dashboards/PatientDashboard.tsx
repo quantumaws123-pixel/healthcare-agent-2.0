@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Heart, Activity, TrendingUp, Pill, FileText, Loader2, Plus, UserCheck, Sliders, Zap, CheckCircle, Info, Award, HelpCircle } from "lucide-react";
+import { Heart, Activity, TrendingUp, Pill, FileText, Loader2, Plus, UserCheck, Sliders, Zap, CheckCircle, Info, Award, HelpCircle, Bot } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { FloatingPanel } from "@/components/ui/FloatingPanel";
 import { StatCard } from "@/components/ui/StatCard";
 import { Button } from "@/components/ui/Button";
@@ -153,6 +154,24 @@ export function PatientDashboard() {
           </div>
         </FloatingPanel>
       )}
+
+      {/* AI Assistant CTA */}
+      <Link to="/assistant">
+        <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary-500 to-blue-600 hover:from-primary-600 hover:to-blue-700 transition-all cursor-pointer shadow-md group">
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <Bot size={20} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-white">Ask Your Health Assistant</p>
+            <p className="text-xs text-white/80 mt-0.5">
+              "Why is my risk high?" · "Did I sleep enough?" · "What should I improve today?"
+            </p>
+          </div>
+          <div className="text-white/60 group-hover:text-white transition-colors text-xs font-medium">
+            Ask →
+          </div>
+        </div>
+      </Link>
 
       {/* Health Overview Section: Twin Indexes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

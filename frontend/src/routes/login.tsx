@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Mail, Lock, User, Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Heart, Mail, Lock, User, Loader2, Eye, EyeOff, AlertCircle, Wifi, WifiOff } from "lucide-react";
 import { useAuthContext } from "@/context/AuthContext";
-import { getGoogleLoginUrl, type Role } from "@/lib/auth";
+import { getGoogleLoginUrl, getApiUrl, type Role } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
@@ -38,6 +38,15 @@ function LoginPage() {
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<"checking" | "online" | "offline">("checking");
+
+  // Ping backend health on mount — shows status to user (important for Render cold-starts)
+  useEffect(() => {
+    const apiUrl = getApiUrl();
+    fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(8000) })
+      .then(r => setServerStatus(r.ok ? "online" : "offline"))
+      .catch(() => setServerStatus("offline"));
+  }, []);
 
   // Show error messages redirected back from the Google OAuth callback
   useEffect(() => {
@@ -74,7 +83,13 @@ function LoginPage() {
         }
       }
     } catch (err: any) {
-      setError(err?.message ?? "Something went wrong. Please try again.");
+      const msg: string = err?.message ?? "Something went wrong. Please try again.";
+      // Map common error messages to cleaner display text
+      if (msg.includes("Unable to connect") || msg.includes("temporarily unavailable") || msg.includes("starting up")) {
+        setError("⏳ The server is waking up. This can take 30–60 seconds on first load. Please wait and try again.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -259,6 +274,18 @@ function LoginPage() {
         <p className="text-center text-xs text-gray-400 mt-6">
           Healthcare Agent 2.0 · Secure clinical monitoring platform
         </p>
+        {/* Server status indicator */}
+        <div className="flex items-center justify-center gap-1.5 mt-2">
+          {serverStatus === "checking" && (
+            <><Loader2 size={11} className="text-gray-400 animate-spin" /><span className="text-[10px] text-gray-400">Checking server…</span></>
+          )}
+          {serverStatus === "online" && (
+            <><Wifi size={11} className="text-green-500" /><span className="text-[10px] text-green-500">Server online</span></>
+          )}
+          {serverStatus === "offline" && (
+            <><WifiOff size={11} className="text-amber-500" /><span className="text-[10px] text-amber-500">Server is waking up — first login may take 30–60s</span></>
+          )}
+        </div>
       </motion.div>
     </div>
   );

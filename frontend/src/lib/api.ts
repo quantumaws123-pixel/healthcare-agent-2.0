@@ -25,23 +25,40 @@ async function apiFetch<T>(
   options?: RequestInit
 ): Promise<T> {
   const token = getAccessToken();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...options,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...options,
+    });
+  } catch (networkErr) {
+    // Network failure — server unreachable or offline
+    const err: ApiError = {
+      status: 0,
+      message: "Unable to connect to the server. Please check your internet connection and try again.",
+    };
+    throw err;
+  }
 
   if (!res.ok) {
-    let message = `HTTP ${res.status}`;
+    let message = `Request failed (${res.status})`;
     try {
       const body = await res.json();
       message = body?.detail ?? body?.message ?? message;
     } catch {
       // ignore
     }
+    // Map common HTTP codes to friendly messages
+    if (res.status === 401) message = "Session expired. Please sign in again.";
+    if (res.status === 403) message = "You don't have permission to perform this action.";
+    if (res.status === 404) message = "The requested resource was not found.";
+    if (res.status === 500) message = "The server encountered an error. Please try again shortly.";
+    if (res.status === 502 || res.status === 503 || res.status === 504)
+      message = "The server is temporarily unavailable. It may be starting up — please retry in a moment.";
     const err: ApiError = { status: res.status, message };
     throw err;
   }
@@ -342,3 +359,37 @@ export const hospitalQueryKeys = {
   myDoctorPatients:() => ["my-doctor-patients"]     as const,
   assignedDoctor:  (id: string) => ["assigned-doctor", id] as const,
 };
+
+
+/* ── AI Health Assistant ─────────────────────────────────────────────── */
+
+export interface AssistantEvidence {
+  label: string;
+  value: string;
+}
+
+export interface AssistantMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AssistantChatRequest {
+  question: string;
+  patient_id?: string;
+  history?: AssistantMessage[];
+}
+
+export interface AssistantResponse {
+  answer: string;
+  evidence: AssistantEvidence[];
+  recommendations: string[];
+  expected_improvement?: string | null;
+  data_sources: string[];
+}
+
+export function askAssistant(data: AssistantChatRequest): Promise<AssistantResponse> {
+  return apiFetch<AssistantResponse>("/api/assistant/chat", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}

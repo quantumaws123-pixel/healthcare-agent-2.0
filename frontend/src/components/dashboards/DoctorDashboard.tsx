@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users, Heart, TrendingUp, AlertTriangle, FileText, Activity, Loader2, ClipboardList } from "lucide-react";
+import { Users, Heart, TrendingUp, AlertTriangle, FileText, Activity, Loader2, ClipboardList, Bot, Stethoscope } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { FloatingPanel } from "@/components/ui/FloatingPanel";
@@ -46,9 +46,16 @@ export function DoctorDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Doctor Dashboard</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Monitor and manage your patients</p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Doctor Dashboard</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Monitor and manage your patients</p>
+        </div>
+        <Link to="/workbench">
+          <Button variant="primary" leftIcon={<Stethoscope size={15} />}>
+            Open Workbench
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Grid */}
@@ -58,6 +65,24 @@ export function DoctorDashboard() {
         <StatCard label="High Risk Alerts" value={String(highRiskCount)} icon={AlertTriangle} color="red" />
         <StatCard label="Avg Compliance" value={avgCompliance} icon={TrendingUp} color="purple" />
       </div>
+
+      {/* AI Assistant CTA */}
+      <Link to="/assistant">
+        <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary-500 to-blue-600 hover:from-primary-600 hover:to-blue-700 transition-all cursor-pointer shadow-md group">
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <Bot size={20} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-white">AI Clinical Assistant</p>
+            <p className="text-xs text-white/80 mt-0.5">
+              "Why is this patient high risk?" · "Explain the prediction." · "Show compliance summary."
+            </p>
+          </div>
+          <div className="text-white/60 group-hover:text-white transition-colors text-xs font-medium">
+            Ask →
+          </div>
+        </div>
+      </Link>
 
       {/* My Assigned Patients */}
       {myPatients.length > 0 && (

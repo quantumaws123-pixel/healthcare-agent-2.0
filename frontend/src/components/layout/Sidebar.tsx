@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, LayoutDashboard, Users, AlertTriangle,
   FlaskConical, BarChart3, Settings, ChevronLeft, ChevronRight,
-  Heart, LogOut, UserCheck, Shield, ClipboardList,
+  Heart, LogOut, UserCheck, Shield, ClipboardList, Bot, Stethoscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
@@ -17,6 +17,8 @@ interface NavItem { label: string; to: string; icon: React.ElementType; badge?: 
 
 const navItems: NavItem[] = [
   { label: "Dashboard",      to: "/",               icon: LayoutDashboard },
+  { label: "Workbench",      to: "/workbench",      icon: Stethoscope,    roles: ["doctor", "admin"] },
+  { label: "Assistant",      to: "/assistant",      icon: Bot                                         },
   { label: "Patients",       to: "/patients",       icon: Users,          roles: ["admin", "doctor"] },
   { label: "Risk Alerts",    to: "/alerts",         icon: AlertTriangle,  roles: ["admin", "doctor"] },
   { label: "Digital Twins",  to: "/twins",          icon: Activity,       roles: ["admin", "doctor"] },

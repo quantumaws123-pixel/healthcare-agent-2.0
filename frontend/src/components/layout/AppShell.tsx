@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -46,7 +47,9 @@ export function AppShell({ children }: AppShellProps) {
         <TopNav onMenuClick={() => setMobileSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8">
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </div>

@@ -100,32 +100,58 @@ function AnalyticsPage() {
               title="Total Patients"
               value={totalPatients.toLocaleString()}
               icon={<Users size={18} className="text-[var(--color-primary-500)]" />}
-              iconColor="bg-[var(--color-primary-50)]"
+              iconColor="bg-[var(--color-primary-50)] dark:bg-primary-900/30"
             />
             <KPICard
               title="High / Critical Risk"
               value={highRiskCount.toLocaleString()}
-              unit="patients"
+              unit={totalPatients > 0 ? `(${Math.round(highRiskCount / totalPatients * 100)}%)` : ""}
               icon={<BarChart3 size={18} className="text-[var(--color-danger-500)]" />}
-              iconColor="bg-[var(--color-danger-50)]"
+              iconColor="bg-[var(--color-danger-50)] dark:bg-red-900/30"
             />
             <KPICard
               title="Avg Compliance"
               value={(Math.round(avgCompliance * 10) / 10).toFixed(1)}
               unit="%"
               icon={<ShieldCheck size={18} className="text-[var(--color-success-600)]" />}
-              iconColor="bg-[var(--color-success-50)]"
+              iconColor="bg-[var(--color-success-50)] dark:bg-green-900/30"
+              description={avgCompliance >= 75 ? "✓ Above target (75%)" : "⚠ Below 75% target"}
             />
             <KPICard
               title="Avg Readmission Risk"
               value={(Math.round(avgReadmission * 1000) / 10).toFixed(1)}
               unit="%"
               icon={<TrendingUp size={18} className="text-[var(--color-warning-600)]" />}
-              iconColor="bg-[var(--color-warning-50)]"
+              iconColor="bg-[var(--color-warning-50)] dark:bg-amber-900/30"
+              invertTrend
             />
           </>
         )}
       </motion.div>
+
+      {/* Insight callouts */}
+      {!isLoading && stats && (
+        <motion.div variants={staggerItem} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 text-sm">
+            <p className="font-semibold text-blue-800 dark:text-blue-300">📊 Risk Insight</p>
+            <p className="text-blue-700 dark:text-blue-400 mt-0.5 text-xs">
+              {highRiskCount} of {totalPatients} patients ({totalPatients > 0 ? Math.round(highRiskCount / totalPatients * 100) : 0}%) are High or Critical risk and need intervention.
+            </p>
+          </div>
+          <div className="rounded-xl p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/50 text-sm">
+            <p className="font-semibold text-green-800 dark:text-green-300">✅ Compliance Status</p>
+            <p className="text-green-700 dark:text-green-400 mt-0.5 text-xs">
+              System-wide average compliance is {avgCompliance.toFixed(1)}%. {avgCompliance >= 75 ? "Platform is performing above target." : "Below the 75% clinical target — review care plans."}
+            </p>
+          </div>
+          <div className="rounded-xl p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/50 text-sm">
+            <p className="font-semibold text-amber-800 dark:text-amber-300">⚠ Readmission Risk</p>
+            <p className="text-amber-700 dark:text-amber-400 mt-0.5 text-xs">
+              Average readmission probability is {(avgReadmission * 100).toFixed(1)}%. {avgReadmission < 0.3 ? "Risk is well-managed." : "Focused compliance improvements are needed."}
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       <motion.div variants={staggerItem}>
         <Tabs defaultTab="overview" variant="line">

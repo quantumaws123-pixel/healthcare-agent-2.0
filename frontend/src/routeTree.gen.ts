@@ -15,10 +15,12 @@ import { Route as LoginImport } from './routes/login'
 import { Route as AppImport } from './routes/_app'
 import { Route as AppIndexImport } from './routes/_app.index'
 import { Route as AuthCallbackImport } from './routes/auth.callback'
+import { Route as AppWorkbenchImport } from './routes/_app.workbench'
 import { Route as AppTwinsImport } from './routes/_app.twins'
 import { Route as AppSettingsImport } from './routes/_app.settings'
 import { Route as AppPatientsImport } from './routes/_app.patients'
 import { Route as AppModelsImport } from './routes/_app.models'
+import { Route as AppAssistantImport } from './routes/_app.assistant'
 import { Route as AppAnalyticsImport } from './routes/_app.analytics'
 import { Route as AppAlertsImport } from './routes/_app.alerts'
 import { Route as AppPatientsPatientIdImport } from './routes/_app.patients.$patientId'
@@ -51,6 +53,12 @@ const AuthCallbackRoute = AuthCallbackImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AppWorkbenchRoute = AppWorkbenchImport.update({
+  id: '/workbench',
+  path: '/workbench',
+  getParentRoute: () => AppRoute,
+} as any)
+
 const AppTwinsRoute = AppTwinsImport.update({
   id: '/twins',
   path: '/twins',
@@ -72,6 +80,12 @@ const AppPatientsRoute = AppPatientsImport.update({
 const AppModelsRoute = AppModelsImport.update({
   id: '/models',
   path: '/models',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppAssistantRoute = AppAssistantImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -143,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnalyticsImport
       parentRoute: typeof AppImport
     }
+    '/_app/assistant': {
+      id: '/_app/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AppAssistantImport
+      parentRoute: typeof AppImport
+    }
     '/_app/models': {
       id: '/_app/models'
       path: '/models'
@@ -169,6 +190,13 @@ declare module '@tanstack/react-router' {
       path: '/twins'
       fullPath: '/twins'
       preLoaderRoute: typeof AppTwinsImport
+      parentRoute: typeof AppImport
+    }
+    '/_app/workbench': {
+      id: '/_app/workbench'
+      path: '/workbench'
+      fullPath: '/workbench'
+      preLoaderRoute: typeof AppWorkbenchImport
       parentRoute: typeof AppImport
     }
     '/auth/callback': {
@@ -233,10 +261,12 @@ const AppPatientsRouteWithChildren = AppPatientsRoute._addFileChildren(
 interface AppRouteChildren {
   AppAlertsRoute: typeof AppAlertsRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAssistantRoute: typeof AppAssistantRoute
   AppModelsRoute: typeof AppModelsRoute
   AppPatientsRoute: typeof AppPatientsRouteWithChildren
   AppSettingsRoute: typeof AppSettingsRoute
   AppTwinsRoute: typeof AppTwinsRoute
+  AppWorkbenchRoute: typeof AppWorkbenchRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAdminAdminsRoute: typeof AppAdminAdminsRoute
   AppAdminAssignRoute: typeof AppAdminAssignRoute
@@ -246,10 +276,12 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAlertsRoute: AppAlertsRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAssistantRoute: AppAssistantRoute,
   AppModelsRoute: AppModelsRoute,
   AppPatientsRoute: AppPatientsRouteWithChildren,
   AppSettingsRoute: AppSettingsRoute,
   AppTwinsRoute: AppTwinsRoute,
+  AppWorkbenchRoute: AppWorkbenchRoute,
   AppIndexRoute: AppIndexRoute,
   AppAdminAdminsRoute: AppAdminAdminsRoute,
   AppAdminAssignRoute: AppAdminAssignRoute,
@@ -263,10 +295,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/alerts': typeof AppAlertsRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/assistant': typeof AppAssistantRoute
   '/models': typeof AppModelsRoute
   '/patients': typeof AppPatientsRouteWithChildren
   '/settings': typeof AppSettingsRoute
   '/twins': typeof AppTwinsRoute
+  '/workbench': typeof AppWorkbenchRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
   '/admin/admins': typeof AppAdminAdminsRoute
@@ -279,10 +313,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/alerts': typeof AppAlertsRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/assistant': typeof AppAssistantRoute
   '/models': typeof AppModelsRoute
   '/patients': typeof AppPatientsRouteWithChildren
   '/settings': typeof AppSettingsRoute
   '/twins': typeof AppTwinsRoute
+  '/workbench': typeof AppWorkbenchRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
   '/admin/admins': typeof AppAdminAdminsRoute
@@ -297,10 +333,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/alerts': typeof AppAlertsRoute
   '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/assistant': typeof AppAssistantRoute
   '/_app/models': typeof AppModelsRoute
   '/_app/patients': typeof AppPatientsRouteWithChildren
   '/_app/settings': typeof AppSettingsRoute
   '/_app/twins': typeof AppTwinsRoute
+  '/_app/workbench': typeof AppWorkbenchRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
   '/_app/admin/admins': typeof AppAdminAdminsRoute
@@ -316,10 +354,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/alerts'
     | '/analytics'
+    | '/assistant'
     | '/models'
     | '/patients'
     | '/settings'
     | '/twins'
+    | '/workbench'
     | '/auth/callback'
     | '/'
     | '/admin/admins'
@@ -331,10 +371,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/alerts'
     | '/analytics'
+    | '/assistant'
     | '/models'
     | '/patients'
     | '/settings'
     | '/twins'
+    | '/workbench'
     | '/auth/callback'
     | '/'
     | '/admin/admins'
@@ -347,10 +389,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/alerts'
     | '/_app/analytics'
+    | '/_app/assistant'
     | '/_app/models'
     | '/_app/patients'
     | '/_app/settings'
     | '/_app/twins'
+    | '/_app/workbench'
     | '/auth/callback'
     | '/_app/'
     | '/_app/admin/admins'
@@ -392,10 +436,12 @@ export const routeTree = rootRoute
       "children": [
         "/_app/alerts",
         "/_app/analytics",
+        "/_app/assistant",
         "/_app/models",
         "/_app/patients",
         "/_app/settings",
         "/_app/twins",
+        "/_app/workbench",
         "/_app/",
         "/_app/admin/admins",
         "/_app/admin/assign",
@@ -411,6 +457,10 @@ export const routeTree = rootRoute
     },
     "/_app/analytics": {
       "filePath": "_app.analytics.tsx",
+      "parent": "/_app"
+    },
+    "/_app/assistant": {
+      "filePath": "_app.assistant.tsx",
       "parent": "/_app"
     },
     "/_app/models": {
@@ -430,6 +480,10 @@ export const routeTree = rootRoute
     },
     "/_app/twins": {
       "filePath": "_app.twins.tsx",
+      "parent": "/_app"
+    },
+    "/_app/workbench": {
+      "filePath": "_app.workbench.tsx",
       "parent": "/_app"
     },
     "/auth/callback": {

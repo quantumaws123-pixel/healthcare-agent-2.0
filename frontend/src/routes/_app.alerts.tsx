@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { getStoredUser } from "@/lib/auth";
 import { motion } from "framer-motion";
-import { AlertTriangle, ChevronRight, Clock, Bell, BellOff, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronRight, Bell, BellOff, RefreshCw, Stethoscope, ShieldAlert } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -42,24 +42,24 @@ function getUrgency(prob: number): "critical" | "high" | "medium" {
 function AlertsPage() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  // Load High-risk patients sorted by readmission probability (server-side)
-  const { data: highRisk, isLoading, refetch: refetchHigh } = usePatients({
-    risk_level: "High",
-    page_size: 20,
-  });
+  const { data: highRisk,     isLoading: loadingHigh,    refetch: refetchHigh }     = usePatients({ risk_level: "High",     page_size: 20 });
+  const { data: criticalRisk, isLoading: loadingCritical, refetch: refetchCritical } = usePatients({ risk_level: "Critical", page_size: 20 });
 
-  const allAlerts: PatientSummary[] = (highRisk?.data ?? []).filter(
-    (p) => !dismissed.has(p.Patient_ID)
-  );
+  const isLoading = loadingHigh || loadingCritical;
 
-  const criticalCount = allAlerts.filter(p => p.Readmission_Probability >= 0.85).length;
-  const highCount     = allAlerts.filter(p => p.Readmission_Probability >= 0.70 && p.Readmission_Probability < 0.85).length;
+  const allAlerts: PatientSummary[] = [
+    ...(criticalRisk?.data ?? []),
+    ...(highRisk?.data ?? []),
+  ].filter(p => !dismissed.has(p.Patient_ID))
+   .sort((a, b) => b.Readmission_Probability - a.Readmission_Probability);
+
+  const criticalCount = allAlerts.filter(p => p.Risk_Level === "Critical").length;
+  const highCount     = allAlerts.filter(p => p.Risk_Level === "High").length;
   const lowCompCount  = allAlerts.filter(p => p.Compliance_Score < 50).length;
 
-  const dismissAll = () => {
-    const ids = new Set(allAlerts.map(p => p.Patient_ID));
-    setDismissed(prev => new Set([...prev, ...ids]));
-  };
+  const dismissAll = () => setDismissed(new Set(allAlerts.map(p => p.Patient_ID)));
+
+  const refetchAll = () => { setDismissed(new Set()); refetchHigh(); refetchCritical(); };
 
   return (
     <motion.div
@@ -71,30 +71,24 @@ function AlertsPage() {
       {/* Header */}
       <motion.div variants={staggerItem} className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-foreground)] tracking-tight">
+          <h1 className="text-2xl font-bold text-[var(--color-foreground)] tracking-tight flex items-center gap-2">
+            <ShieldAlert size={22} className="text-red-500" />
             Risk Alerts
           </h1>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
-            {isLoading ? "Loading…" : `${allAlerts.length} active alerts requiring attention`}
+            {isLoading ? "Loading…" : `${allAlerts.length} active alert${allAlerts.length !== 1 ? "s" : ""} requiring attention`}
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<RefreshCw size={14} />}
-            loading={isLoading}
-            onClick={() => { setDismissed(new Set()); refetchHigh(); }}
-          >
+          <Link to="/workbench">
+            <Button variant="primary" size="sm" leftIcon={<Stethoscope size={14} />}>
+              Open Workbench
+            </Button>
+          </Link>
+          <Button variant="secondary" size="sm" leftIcon={<RefreshCw size={14} />} loading={isLoading} onClick={refetchAll}>
             Refresh
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<BellOff size={14} />}
-            disabled={allAlerts.length === 0}
-            onClick={dismissAll}
-          >
+          <Button variant="secondary" size="sm" leftIcon={<BellOff size={14} />} disabled={allAlerts.length === 0} onClick={dismissAll}>
             Dismiss All
           </Button>
         </div>
@@ -102,28 +96,22 @@ function AlertsPage() {
 
       {/* Summary cards — real counts */}
       <motion.div variants={staggerItem} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="border-l-4 border-[var(--color-danger-500)]">
+        <Card className="border-l-4 border-red-500">
           <CardContent className="pt-5">
-            <p className="text-3xl font-bold text-[var(--color-danger-500)]">
-              {isLoading ? "—" : criticalCount}
-            </p>
-            <p className="text-sm text-[var(--color-muted)] mt-1">Critical — Readmission Risk ≥ 85%</p>
+            <p className="text-3xl font-bold text-red-500">{isLoading ? "—" : criticalCount}</p>
+            <p className="text-sm text-[var(--color-muted)] mt-1">Critical Risk Patients</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-[var(--color-warning-500)]">
+        <Card className="border-l-4 border-amber-500">
           <CardContent className="pt-5">
-            <p className="text-3xl font-bold text-[var(--color-warning-600)]">
-              {isLoading ? "—" : highCount}
-            </p>
-            <p className="text-sm text-[var(--color-muted)] mt-1">High Risk — Readmission Risk 70–85%</p>
+            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{isLoading ? "—" : highCount}</p>
+            <p className="text-sm text-[var(--color-muted)] mt-1">High Risk Patients</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-[var(--color-primary-500)]">
+        <Card className="border-l-4 border-primary-500">
           <CardContent className="pt-5">
-            <p className="text-3xl font-bold text-[var(--color-primary-600)]">
-              {isLoading ? "—" : lowCompCount}
-            </p>
-            <p className="text-sm text-[var(--color-muted)] mt-1">Low Compliance — Score &lt; 50%</p>
+            <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{isLoading ? "—" : lowCompCount}</p>
+            <p className="text-sm text-[var(--color-muted)] mt-1">Low Compliance (under 50%)</p>
           </CardContent>
         </Card>
       </motion.div>
